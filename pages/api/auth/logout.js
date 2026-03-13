@@ -6,6 +6,6 @@ export default function handler(req, res) {
     return sendMethodNotAllowed(res, ["POST"]);
   }
 
-  res.setHeader("Set-Cookie", buildLogoutCookie());
+  res.setHeader("Set-Cookie", buildLogoutCookie(req));
   return res.status(200).json({ success: true });
 }

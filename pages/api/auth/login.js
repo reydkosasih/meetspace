@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     const token = signAuthToken(user);
-    res.setHeader("Set-Cookie", buildAuthCookie(token));
+    res.setHeader("Set-Cookie", buildAuthCookie(token, req));
 
     return res.status(200).json({ user: serializeUser(user) });
   } catch (error) {
