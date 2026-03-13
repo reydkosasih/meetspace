@@ -11,6 +11,13 @@ import {
   Mail, Phone, Shield, UserCheck, UserX, Tag, Globe, Crown, Eye,
   Lock, EyeOff, KeyRound, LayoutPanelLeft, Maximize2, LogIn, UserCircle2, ShieldAlert
 } from "lucide-react";
+import { AppSidebar } from "@/components/meeting-app/AppSidebar";
+import { APP_THEME_STYLE } from "@/components/meeting-app/constants";
+import { LayoutWrapper } from "@/components/meeting-app/LayoutWrapper";
+import { LoadingScreen } from "@/components/meeting-app/LoadingScreen";
+import { MeetingAppContent } from "@/components/meeting-app/MeetingAppContent";
+import { MeetingAppModals } from "@/components/meeting-app/MeetingAppModals";
+import { useMeetingAppController } from "@/hooks/useMeetingAppController";
 
 const today = new Date();
 const todayStr = today.toISOString().split("T")[0];
@@ -51,31 +58,12 @@ function getMonthMatrix(year, month) {
 
 const AMENITY_ICONS = { projector: Monitor, tv: Monitor, video: Video, wifi: Wifi, whiteboard: Layers, coffee: Coffee, mic: Mic };
 const STATUS_CFG = {
-  confirmed: { label: "Confirmed", color: "#10b981", bg: "#052e16" },
-  checked_in: { label: "Active", color: "#f59e0b", bg: "#1c1200" },
-  completed: { label: "Done", color: "#6b7280", bg: "#111827" },
-  cancelled: { label: "Cancelled", color: "#ef4444", bg: "#1f0000" },
-  no_show: { label: "No Show", color: "#f97316", bg: "#1c0a00" },
+  confirmed: { label: "Confirmed", color: "var(--success)", bg: "var(--success-bg)" },
+  checked_in: { label: "Active", color: "var(--warning)", bg: "var(--warning-bg)" },
+  completed: { label: "Done", color: "var(--text-muted)", bg: "var(--surface-muted)" },
+  cancelled: { label: "Cancelled", color: "var(--danger)", bg: "var(--danger-bg)" },
+  no_show: { label: "No Show", color: "var(--warning)", bg: "var(--warning-bg)" },
 };
-
-async function apiRequest(url, options = {}) {
-  const requestOptions = {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {}),
-    },
-  };
-
-  const response = await fetch(url, requestOptions);
-  const payload = response.status === 204 ? null : await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(payload?.error || "Request failed.");
-  }
-
-  return payload;
-}
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function Toast({ toasts, remove }) {
@@ -83,16 +71,16 @@ function Toast({ toasts, remove }) {
     <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
       {toasts.map(t => (
         <div key={t.id} style={{
-          background: t.type === "success" ? "#052e16" : t.type === "error" ? "#1f0000" : "#0c0c20",
-          border: `1px solid ${t.type === "success" ? "#10b981" : t.type === "error" ? "#ef4444" : "#6366f1"}`,
-          borderRadius: 12, padding: "14px 18px", color: "#f9fafb", display: "flex", alignItems: "center", gap: 12,
+          background: t.type === "success" ? "var(--success-bg)" : t.type === "error" ? "var(--danger-bg)" : "var(--info-bg)",
+          border: `1px solid ${t.type === "success" ? "var(--success)" : t.type === "error" ? "var(--danger)" : "var(--info)"}`,
+          borderRadius: 12, padding: "14px 18px", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 12,
           minWidth: 300, maxWidth: 400, fontFamily: "'DM Sans', sans-serif", fontSize: 14,
           animation: "slideIn .3s ease",
           boxShadow: "0 8px 32px rgba(0,0,0,.6)"
         }}>
-          {t.type === "success" ? <CheckCircle size={18} color="#10b981" /> : t.type === "error" ? <XCircle size={18} color="#ef4444" /> : <Bell size={18} color="#6366f1" />}
+          {t.type === "success" ? <CheckCircle size={18} color="var(--success)" /> : t.type === "error" ? <XCircle size={18} color="var(--danger)" /> : <Bell size={18} color="var(--info)" />}
           <span style={{ flex: 1 }}>{t.message}</span>
-          <button onClick={() => remove(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>×</button>
+          <button onClick={() => remove(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", lineHeight: 1 }}>×</button>
         </div>
       ))}
     </div>
@@ -107,9 +95,9 @@ function Modal({ onClose, children, wide }) {
       zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: "#0f1117", border: "1px solid #1f2937", borderRadius: 20,
+        background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 20,
         width: "100%", maxWidth: wide ? 760 : 520, maxHeight: "90vh", overflowY: "auto",
-        padding: 32, color: "#f9fafb", fontFamily: "'DM Sans', sans-serif",
+        padding: 32, color: "var(--text-primary)", fontFamily: "'DM Sans', sans-serif",
         boxShadow: "0 24px 80px rgba(0,0,0,.8)"
       }}>
         {children}
@@ -133,7 +121,7 @@ function QRModal({ booking, room, onCheckin, onClose }) {
           <QrCode size={24} color={room.color} />
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>QR Check-in</h2>
-        <p style={{ color: "#6b7280", marginBottom: 24, fontSize: 14 }}>{room.name} · {booking.startTime}–{booking.endTime}</p>
+        <p style={{ color: "var(--text-muted)", marginBottom: 24, fontSize: 14 }}>{room.name} · {booking.startTime}–{booking.endTime}</p>
 
         {/* Fake QR grid */}
         <div style={{ width: 180, height: 180, margin: "0 auto 20px", position: "relative" }}>
@@ -160,7 +148,7 @@ function QRModal({ booking, room, onCheckin, onClose }) {
           )}
         </div>
 
-        <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>Kode: <span style={{ fontFamily: "monospace", color: "#f9fafb", fontWeight: 700, letterSpacing: 2 }}>{booking.checkinCode}</span></p>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Kode: <span style={{ fontFamily: "monospace", color: "var(--text-primary)", fontWeight: 700, letterSpacing: 2 }}>{booking.checkinCode}</span></p>
         {!done && !scanning && (
           <button onClick={simulate} style={{
             background: room.color, color: "#000", border: "none", borderRadius: 10,
@@ -219,26 +207,26 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
 
   const inp = (field, val) => setForm(f => ({ ...f, [field]: val }));
   const inputStyle = {
-    background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10,
-    color: "#f9fafb", padding: "10px 14px", width: "100%", fontSize: 14,
+    background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10,
+    color: "var(--text-primary)", padding: "10px 14px", width: "100%", fontSize: 14,
     fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box"
   };
-  const labelStyle = { fontSize: 12, color: "#9ca3af", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
+  const labelStyle = { fontSize: 12, color: "var(--text-secondary)", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
 
   return (
     <Modal onClose={onClose} wide>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>Booking Ruang Meeting</h2>
-          <p style={{ color: "#6b7280", fontSize: 13 }}>Buffer otomatis {BUFFER} menit akan ditambahkan setelah meeting berakhir</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Buffer otomatis {BUFFER} menit akan ditambahkan setelah meeting berakhir</p>
         </div>
-        <button onClick={onClose} style={{ background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <button onClick={onClose} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <X size={16} />
         </button>
       </div>
 
       {!hasBookingPrereqs && (
-        <div style={{ marginBottom: 16, background: "#1c1200", border: "1px solid #f59e0b44", borderRadius: 10, padding: "12px 16px", color: "#f59e0b", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+        <div style={{ marginBottom: 16, background: "var(--warning-bg)", border: "1px solid var(--warning-soft)", borderRadius: 10, padding: "12px 16px", color: "var(--warning)", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
           <AlertCircle size={16} /> Booking memerlukan minimal satu room aktif, satu user aktif, dan satu departemen aktif.
         </div>
       )}
@@ -256,13 +244,13 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
             {rooms.map(r => (
               <div key={r.id} onClick={() => inp("roomId", r.id)} style={{
-                border: `2px solid ${form.roomId == r.id ? r.color : "#2d3141"}`,
+                border: `2px solid ${form.roomId == r.id ? r.color : "var(--border-color)"}`,
                 borderRadius: 10, padding: "10px 12px", cursor: "pointer",
-                background: form.roomId == r.id ? r.color + "15" : "#1a1d27",
+                background: form.roomId == r.id ? r.color + "15" : "var(--surface-bg)",
                 transition: "all .2s"
               }}>
                 <div style={{ fontWeight: 600, fontSize: 13 }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: "#9ca3af" }}>{r.capacity} orang · {r.floor}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{r.capacity} orang · {r.floor}</div>
               </div>
             ))}
           </div>
@@ -286,7 +274,7 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
           <input type="time" style={inputStyle} value={form.startTime} onChange={e => inp("startTime", e.target.value)} />
         </div>
         <div>
-          <label style={labelStyle}>Jam Selesai <span style={{ color: room?.color || "#9ca3af" }}>+buffer {BUFFER}m → {bufferEnd}</span></label>
+          <label style={labelStyle}>Jam Selesai <span style={{ color: room?.color || "var(--text-secondary)" }}>+buffer {BUFFER}m → {bufferEnd}</span></label>
           <input type="time" style={inputStyle} value={form.endTime} onChange={e => inp("endTime", e.target.value)} />
         </div>
 
@@ -308,14 +296,14 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
       </div>
 
       {error && (
-        <div style={{ marginTop: 16, background: "#1f0000", border: "1px solid #ef4444", borderRadius: 10, padding: "12px 16px", color: "#ef4444", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+        <div style={{ marginTop: 16, background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 10, padding: "12px 16px", color: "var(--danger)", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
           <AlertCircle size={16} /> {error}
         </div>
       )}
 
       <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
-        <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>Batal</button>
-        <button onClick={submit} disabled={!hasBookingPrereqs || !room} style={{ flex: 2, background: room?.color || "#374151", border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: !hasBookingPrereqs || !room ? "not-allowed" : "pointer", opacity: !hasBookingPrereqs || !room ? 0.6 : 1, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>Konfirmasi Booking →</button>
+        <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>Batal</button>
+        <button onClick={submit} disabled={!hasBookingPrereqs || !room} style={{ flex: 2, background: room?.color || "var(--text-disabled)", border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: !hasBookingPrereqs || !room ? "not-allowed" : "pointer", opacity: !hasBookingPrereqs || !room ? 0.6 : 1, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>Konfirmasi Booking →</button>
       </div>
     </Modal>
   );
@@ -346,10 +334,10 @@ function DetailModal({ booking, room, onCancel, onCheckin, onClose }) {
           [Users, "Peserta", `${booking.attendees} orang · Kapasitas ${room.capacity}`],
           [Building2, "Departemen", `${booking.department}`],
         ].map(([Icon, label, val]) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, background: "#1a1d27", borderRadius: 10, padding: "12px 16px" }}>
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface-bg)", borderRadius: 10, padding: "12px 16px" }}>
             <Icon size={16} color={room.color} />
             <div>
-              <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</div>
               <div style={{ fontSize: 14, fontWeight: 500 }}>{val}</div>
             </div>
           </div>
@@ -362,13 +350,13 @@ function DetailModal({ booking, room, onCancel, onCheckin, onClose }) {
             <button onClick={() => setShowQR(true)} style={{ flex: 1, background: room.color, border: "none", color: "#000", borderRadius: 10, padding: "12px", cursor: "pointer", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <QrCode size={16} /> Check-in QR
             </button>
-            <button onClick={() => onCancel(booking.id)} style={{ background: "#1f0000", border: "1px solid #ef444444", color: "#ef4444", borderRadius: 10, padding: "12px 18px", cursor: "pointer", fontSize: 14 }}>
+            <button onClick={() => onCancel(booking.id)} style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", color: "var(--danger)", borderRadius: 10, padding: "12px 18px", cursor: "pointer", fontSize: 14 }}>
               <X size={16} />
             </button>
           </>
         )}
         {booking.status !== "confirmed" && (
-          <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "12px", cursor: "pointer" }}>Tutup</button>
+          <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "12px", cursor: "pointer" }}>Tutup</button>
         )}
       </div>
     </Modal>
@@ -411,15 +399,15 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
       {/* Calendar */}
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-          <button onClick={prevMonth} style={{ background: "#1f2937", border: "none", color: "#f9fafb", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={16} /></button>
+          <button onClick={prevMonth} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-primary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={16} /></button>
           <h2 style={{ fontSize: 22, fontWeight: 700, flex: 1 }}>{monthNames[month]} {year}</h2>
-          <button onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDate(todayStr); }} style={{ background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>Hari ini</button>
-          <button onClick={nextMonth} style={{ background: "#1f2937", border: "none", color: "#f9fafb", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={16} /></button>
+          <button onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDate(todayStr); }} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}>Hari ini</button>
+          <button onClick={nextMonth} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-primary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={16} /></button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", marginBottom: 8 }}>
           {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(d => (
-            <div key={d} style={{ textAlign: "center", fontSize: 12, color: "#6b7280", fontWeight: 600, padding: "8px 0", textTransform: "uppercase", letterSpacing: 0.8 }}>{d}</div>
+            <div key={d} style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, padding: "8px 0", textTransform: "uppercase", letterSpacing: 0.8 }}>{d}</div>
           ))}
         </div>
 
@@ -434,16 +422,16 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
               return (
                 <div key={di} onClick={() => day && setSelectedDate(ds)} style={{
                   borderRadius: 10, padding: "8px 6px", minHeight: 72, cursor: day ? "pointer" : "default",
-                  background: isSel ? "#1e293b" : isToday ? "#0c1624" : "#111320",
-                  border: `1px solid ${isSel ? "#6366f1" : isToday ? "#2d3a5a" : "#1f2937"}`,
+                  background: isSel ? "var(--calendar-selected-bg)" : isToday ? "var(--calendar-today-bg)" : "var(--panel-elevated)",
+                  border: `1px solid ${isSel ? "var(--info)" : isToday ? "var(--calendar-today-border)" : "var(--surface-muted)"}`,
                   transition: "all .15s", opacity: isPast && !isSel ? 0.5 : 1
                 }}>
                   {day && (
                     <>
                       <div style={{
                         width: 26, height: 26, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px",
-                        background: isToday ? "#6366f1" : "transparent",
-                        color: isToday ? "#fff" : isSel ? "#c7d2fe" : "#d1d5db",
+                        background: isToday ? "var(--info)" : "transparent",
+                        color: isToday ? "#fff" : isSel ? "var(--calendar-selected-text)" : "var(--calendar-day-text)",
                         fontWeight: isToday || isSel ? 700 : 400, fontSize: 14
                       }}>{day}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "center" }}>
@@ -451,7 +439,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
                           const r = rooms.find(x => x.id === b.roomId);
                           return <div key={b.id} style={{ width: 8, height: 8, borderRadius: "50%", background: r?.color || "#6366f1" }} />;
                         })}
-                        {dayBkgs.length > 3 && <div style={{ fontSize: 9, color: "#6b7280" }}>+{dayBkgs.length - 3}</div>}
+                        {dayBkgs.length > 3 && <div style={{ fontSize: 9, color: "var(--text-muted)" }}>+{dayBkgs.length - 3}</div>}
                       </div>
                     </>
                   )}
@@ -464,7 +452,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
         {/* Room Legend */}
         <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 12 }}>
           {rooms.map(r => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9ca3af" }}>
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-secondary)" }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
               {r.name}
             </div>
@@ -476,22 +464,22 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{selFormatted}</h3>
-          <p style={{ color: "#6b7280", fontSize: 13 }}>{selectedBookings.length} jadwal aktif</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>{selectedBookings.length} jadwal aktif</p>
         </div>
 
         {/* Search + Filter */}
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1, position: "relative" }}>
-            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input placeholder="Cari..." value={search} onChange={e => setSearch(e.target.value)} style={{
-              width: "100%", boxSizing: "border-box", background: "#1a1d27", border: "1px solid #2d3141",
-              borderRadius: 8, color: "#f9fafb", padding: "8px 10px 8px 30px", fontSize: 13,
+              width: "100%", boxSizing: "border-box", background: "var(--surface-bg)", border: "1px solid var(--surface-muted)",
+              borderRadius: 8, color: "var(--text-primary)", padding: "8px 10px 8px 30px", fontSize: 13,
               fontFamily: "'DM Sans', sans-serif", outline: "none"
             }} />
           </div>
           <select value={filterCap} onChange={e => setFilterCap(Number(e.target.value))} style={{
-            background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 8,
-            color: filterCap ? "#f9fafb" : "#6b7280", padding: "8px 10px", fontSize: 13,
+            background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 8,
+            color: filterCap ? "var(--text-primary)" : "var(--text-muted)", padding: "8px 10px", fontSize: 13,
             fontFamily: "'DM Sans', sans-serif", cursor: "pointer", outline: "none"
           }}>
             <option value={0}>Semua</option>
@@ -513,7 +501,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
         {/* Bookings list */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
           {selectedBookings.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
               <Calendar size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
               <p style={{ fontSize: 14 }}>Tidak ada jadwal</p>
             </div>
@@ -522,7 +510,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
             const sc = STATUS_CFG[b.status] || STATUS_CFG.confirmed;
             return (
               <div key={b.id} onClick={() => onBookingClick(b)} style={{
-                background: "#111320", border: `1px solid ${room?.color}33`,
+                background: "var(--panel-elevated)", border: `1px solid ${room?.color}33`,
                 borderLeft: `3px solid ${room?.color}`, borderRadius: 12, padding: "14px",
                 cursor: "pointer", transition: "all .15s"
               }}>
@@ -530,7 +518,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick }) {
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{b.title}</div>
                   <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: "2px 9px", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{sc.label}</span>
                 </div>
-                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#9ca3af" }}>
+                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} />{b.startTime}–{b.endTime}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{room?.name}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={11} />{b.attendees}</span>
@@ -579,7 +567,7 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, flex: 1 }}>Ketersediaan Ruangan</h2>
         <input type="date" value={viewDate} onChange={e => setViewDate(e.target.value)} style={{
-          background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb",
+          background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)",
           padding: "8px 14px", fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none"
         }} />
         <button onClick={() => onNewBooking()} style={{
@@ -593,8 +581,8 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 20, marginBottom: 20, flexWrap: "wrap" }}>
-        {[["#10b981", "Tersedia"], ["#ef4444", "Terpakai"], ["#f59e0b", "Buffer"], ["#6366f1", "Sekarang"]].map(([c, l]) => (
-          <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#9ca3af" }}>
+        {[["var(--success)", "Tersedia"], ["var(--danger)", "Terpakai"], ["var(--warning)", "Buffer"], ["var(--info)", "Sekarang"]].map(([c, l]) => (
+          <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)" }}>
             <div style={{ width: 14, height: 14, borderRadius: 4, background: c }} />{l}
           </div>
         ))}
@@ -608,7 +596,7 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
             <div />
             {hours.map(h => (
               <div key={h} style={{
-                textAlign: "center", fontSize: 12, color: isToday && h === now.getHours() ? "#6366f1" : "#6b7280",
+                textAlign: "center", fontSize: 12, color: isToday && h === now.getHours() ? "var(--info)" : "var(--text-muted)",
                 fontWeight: isToday && h === now.getHours() ? 700 : 400, padding: "4px 0"
               }}>{String(h).padStart(2, "0")}:00</div>
             ))}
@@ -625,7 +613,7 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: room.color, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{room.name}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>{room.capacity} org · {pct}% terpakai</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{room.capacity} org · {pct}% terpakai</div>
                   </div>
                 </div>
 
@@ -639,20 +627,20 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
                     return h * 60 >= bufStart && h * 60 < bufEnd;
                   });
 
-                  let bg = "#1a1f2e";
-                  if (isCurrent && !busy) bg = "#1a1a3e";
-                  if (isBuffer) bg = "#2d1f00";
+                  let bg = "var(--timeline-slot-bg)";
+                  if (isCurrent && !busy) bg = "var(--timeline-current-bg)";
+                  if (isBuffer) bg = "var(--timeline-buffer-bg)";
                   if (busy) bg = room.color + "33";
 
                   return (
                     <div key={h} style={{
                       height: 52, borderRadius: 6, background: bg,
-                      border: `1px solid ${busy ? room.color + "55" : isCurrent ? "#6366f155" : "#1f2937"}`,
+                      border: `1px solid ${busy ? room.color + "55" : isCurrent ? "var(--info)" : "var(--surface-muted)"}`,
                       cursor: !busy ? "pointer" : "default",
                       position: "relative", overflow: "hidden", transition: "all .15s"
                     }} onClick={() => !busy && onNewBooking(room, viewDate)}>
                       {isCurrent && !busy && (
-                        <div style={{ position: "absolute", left: `${(nowMin % 60) / 60 * 100}%`, top: 0, bottom: 0, width: 2, background: "#6366f1" }} />
+                        <div style={{ position: "absolute", left: `${(nowMin % 60) / 60 * 100}%`, top: 0, bottom: 0, width: 2, background: "var(--info)" }} />
                       )}
                       {bkg && (
                         <div style={{ fontSize: 9, padding: "4px 6px", color: room.color, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -660,7 +648,7 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
                         </div>
                       )}
                       {isBuffer && (
-                        <div style={{ fontSize: 9, padding: "4px 6px", color: "#f59e0b", opacity: 0.7 }}>buffer</div>
+                        <div style={{ fontSize: 9, padding: "4px 6px", color: "var(--warning)", opacity: 0.7 }}>buffer</div>
                       )}
                     </div>
                   );
@@ -688,42 +676,42 @@ function AvailabilityView({ rooms, bookings, onNewBooking }) {
 
             return (
               <div key={room.id} style={{
-                background: "#0f1117", border: `1px solid ${isFree ? "#10b98133" : room.color + "44"}`,
+                background: "var(--panel-bg)", border: `1px solid ${isFree ? "var(--success-soft)" : room.color + "44"}`,
                 borderRadius: 16, padding: "20px", position: "relative", overflow: "hidden"
               }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: isFree ? "#10b981" : room.color }} />
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: isFree ? "var(--success)" : room.color }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                   <div>
                     <h4 style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{room.name}</h4>
-                    <p style={{ color: "#6b7280", fontSize: 12 }}>{room.floor} · {room.capacity} orang</p>
+                    <p style={{ color: "var(--text-muted)", fontSize: 12 }}>{room.floor} · {room.capacity} orang</p>
                   </div>
                   <span style={{
-                    background: isFree ? "#052e16" : "#1f0000",
-                    color: isFree ? "#10b981" : "#ef4444",
+                    background: isFree ? "var(--success-bg)" : "var(--danger-bg)",
+                    color: isFree ? "var(--success)" : "var(--danger)",
                     borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700
                   }}>{isFree ? "Kosong" : "Terpakai"}</span>
                 </div>
 
                 {nowBkg ? (
-                  <div style={{ background: "#1a1d27", borderRadius: 10, padding: "12px", marginBottom: 10 }}>
+                  <div style={{ background: "var(--surface-bg)", borderRadius: 10, padding: "12px", marginBottom: 10 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{nowBkg.title}</div>
-                    <div style={{ fontSize: 12, color: "#9ca3af" }}>{nowBkg.organizer} · Selesai {nowBkg.endTime}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{nowBkg.organizer} · Selesai {nowBkg.endTime}</div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 13, color: "#10b981", marginBottom: 10 }}>● Siap digunakan</div>
+                  <div style={{ fontSize: 13, color: "var(--success)", marginBottom: 10 }}>● Siap digunakan</div>
                 )}
 
                 {nextBkg && (
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Berikutnya: {nextBkg.title} pukul {nextBkg.startTime}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Berikutnya: {nextBkg.title} pukul {nextBkg.startTime}</div>
                 )}
 
                 <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
                   {room.amenities.map(a => {
                     const Icon = AMENITY_ICONS[a];
                     return Icon ? (
-                      <div key={a} style={{ background: "#1a1d27", borderRadius: 6, padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }}>
+                      <div key={a} style={{ background: "var(--surface-bg)", borderRadius: 6, padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }}>
                         <Icon size={11} color={room.color} />
-                        <span style={{ fontSize: 11, color: "#6b7280" }}>{a}</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{a}</span>
                       </div>
                     ) : null;
                   })}
@@ -767,7 +755,7 @@ function AnalyticsView({ bookings, rooms, departments }) {
   const totalDone = bookings.filter(b => ["confirmed", "checked_in", "completed", "no_show"].includes(b.status)).length;
 
   const statCard = (icon, label, val, sub, color) => (
-    <div style={{ background: "#0f1117", border: `1px solid ${color}33`, borderRadius: 16, padding: "20px 22px" }}>
+    <div style={{ background: "var(--panel-bg)", border: `1px solid ${color}33`, borderRadius: 16, padding: "20px 22px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ width: 40, height: 40, background: color + "22", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {icon}
@@ -776,7 +764,7 @@ function AnalyticsView({ bookings, rooms, departments }) {
       </div>
       <div style={{ fontSize: 32, fontWeight: 800, color, marginBottom: 2 }}>{val}</div>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 12, color: "#6b7280" }}>{sub}</div>
+      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{sub}</div>
     </div>
   );
 
@@ -794,28 +782,28 @@ function AnalyticsView({ bookings, rooms, departments }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Weekly trend */}
-        <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "20px" }}>
+        <div style={{ background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 16, padding: "20px" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Tren 7 Hari Terakhir</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="day" tick={{ fill: "#6b7280", fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-muted)" />
+              <XAxis dataKey="day" tick={{ fill: "var(--text-muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "var(--text-muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)" }} />
               <Line type="monotone" dataKey="bookings" stroke="#6366f1" strokeWidth={3} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Dept usage */}
-        <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "20px" }}>
+        <div style={{ background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 16, padding: "20px" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Booking per Departemen</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={deptUsage.slice(0, 6)} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
-              <XAxis type="number" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
-              <Tooltip contentStyle={{ background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-muted)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: "var(--text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" tick={{ fill: "var(--text-secondary)", fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+              <Tooltip contentStyle={{ background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)" }} />
               <Bar dataKey="value" fill="#6366f1" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -824,14 +812,14 @@ function AnalyticsView({ bookings, rooms, departments }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         {/* Room usage */}
-        <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "20px" }}>
+        <div style={{ background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 16, padding: "20px" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Penggunaan per Ruangan</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={roomUsage}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-muted)" />
+              <XAxis dataKey="name" tick={{ fill: "var(--text-secondary)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)" }} />
               <Bar dataKey="bookings" radius={[6, 6, 0, 0]}>
                 {roomUsage.map((r, i) => <Cell key={i} fill={r.color} />)}
               </Bar>
@@ -840,7 +828,7 @@ function AnalyticsView({ bookings, rooms, departments }) {
         </div>
 
         {/* Pie status */}
-        <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "20px" }}>
+        <div style={{ background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 16, padding: "20px" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Distribusi Status Booking</h3>
           <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <ResponsiveContainer width="50%" height={180}>
@@ -853,14 +841,14 @@ function AnalyticsView({ bookings, rooms, departments }) {
                 ]} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
                   {["#6366f1", "#f97316", "#ef4444", "#10b981"].map((c, i) => <Cell key={i} fill={c} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb" }} />
+                <Tooltip contentStyle={{ background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)" }} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[["#6366f1", "Confirmed", totalConfirmed], ["#f97316", "No Show", totalNoShow], ["#ef4444", "Cancelled", totalCancelled], ["#10b981", "Completed", bookings.filter(b => b.status === "completed").length]].map(([c, l, v]) => (
                 <div key={l} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
-                  <span style={{ fontSize: 12, color: "#9ca3af" }}>{l}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{l}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, marginLeft: "auto" }}>{v}</span>
                 </div>
               ))}
@@ -882,7 +870,7 @@ function MyBookingsView({ bookings, rooms, currentUser, onBookingClick, onCancel
     <div>
       <h2 style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Booking Saya</h2>
       {myBookings.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
           <Calendar size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
           <p>Belum ada booking</p>
         </div>
@@ -894,7 +882,7 @@ function MyBookingsView({ bookings, rooms, currentUser, onBookingClick, onCancel
             const isUpcoming = b.date >= todayStr;
             return (
               <div key={b.id} onClick={() => onBookingClick(b)} style={{
-                background: "#0f1117", border: `1px solid ${room?.color}33`,
+                background: "var(--panel-bg)", border: `1px solid ${room?.color}33`,
                 borderLeft: `4px solid ${room?.color}`, borderRadius: 14, padding: "18px 20px",
                 cursor: "pointer", display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "center"
               }}>
@@ -903,7 +891,7 @@ function MyBookingsView({ bookings, rooms, currentUser, onBookingClick, onCancel
                     <span style={{ fontWeight: 700, fontSize: 16 }}>{b.title}</span>
                     <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 600 }}>{sc.label}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#9ca3af", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 16, fontSize: 13, color: "var(--text-secondary)", flexWrap: "wrap" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Calendar size={13} />{new Date(b.date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Clock size={13} />{b.startTime} – {b.endTime}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}><MapPin size={13} />{room?.name} · {room?.floor}</span>
@@ -912,7 +900,7 @@ function MyBookingsView({ bookings, rooms, currentUser, onBookingClick, onCancel
                 </div>
                 {isUpcoming && b.status === "confirmed" && (
                   <button onClick={e => { e.stopPropagation(); onCancel(b.id); }} style={{
-                    background: "#1f0000", border: "1px solid #ef444444", color: "#ef4444",
+                    background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", color: "var(--danger)",
                     borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6
                   }}>
                     <X size={14} /> Batalkan
@@ -958,11 +946,11 @@ function RoomFormModal({ room, onSave, onClose }) {
   };
 
   const inputStyle = {
-    background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10,
-    color: "#f9fafb", padding: "10px 14px", width: "100%", fontSize: 14,
+    background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10,
+    color: "var(--text-primary)", padding: "10px 14px", width: "100%", fontSize: 14,
     fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box"
   };
-  const labelStyle = { fontSize: 12, color: "#9ca3af", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
+  const labelStyle = { fontSize: 12, color: "var(--text-secondary)", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
 
   return (
     <Modal onClose={onClose} wide>
@@ -974,10 +962,10 @@ function RoomFormModal({ room, onSave, onClose }) {
           </div>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? "Edit Ruangan" : "Tambah Ruangan Baru"}</h2>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>{isEdit ? `Perbarui data untuk ${room.name}` : "Isi detail ruangan meeting baru"}</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{isEdit ? `Perbarui data untuk ${room.name}` : "Isi detail ruangan meeting baru"}</p>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <button onClick={onClose} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <X size={16} />
         </button>
       </div>
@@ -1021,8 +1009,8 @@ function RoomFormModal({ room, onSave, onClose }) {
               }} />
             ))}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 8 }}>
-              <span style={{ fontSize: 12, color: "#6b7280" }}>Custom:</span>
-              <input type="color" value={form.color} onChange={e => inp("color", e.target.value)} style={{ width: 36, height: 32, borderRadius: 6, border: "1px solid #2d3141", background: "#1a1d27", cursor: "pointer" }} />
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Custom:</span>
+              <input type="color" value={form.color} onChange={e => inp("color", e.target.value)} style={{ width: 36, height: 32, borderRadius: 6, border: "1px solid var(--surface-muted)", background: "var(--surface-bg)", cursor: "pointer" }} />
             </div>
           </div>
         </div>
@@ -1037,9 +1025,9 @@ function RoomFormModal({ room, onSave, onClose }) {
               return (
                 <button key={a} onClick={() => toggleAmenity(a)} style={{
                   display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
-                  borderRadius: 10, border: `1px solid ${selected ? form.color : "#2d3141"}`,
-                  background: selected ? form.color + "22" : "#1a1d27",
-                  color: selected ? form.color : "#6b7280", cursor: "pointer",
+                  borderRadius: 10, border: `1px solid ${selected ? form.color : "var(--border-color)"}`,
+                  background: selected ? form.color + "22" : "var(--surface-bg)",
+                  color: selected ? form.color : "var(--text-muted)", cursor: "pointer",
                   fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: selected ? 600 : 400,
                   transition: "all .15s"
                 }}>
@@ -1052,13 +1040,13 @@ function RoomFormModal({ room, onSave, onClose }) {
         </div>
 
         {/* Active toggle */}
-        <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1a1d27", borderRadius: 12, padding: "14px 18px" }}>
+        <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface-bg)", borderRadius: 12, padding: "14px 18px" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>Status Ruangan</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Ruangan tidak aktif tidak bisa di-booking</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Ruangan tidak aktif tidak bisa di-booking</div>
           </div>
           <button onClick={() => inp("active", !form.active)} style={{
-            background: form.active ? form.color : "#374151", border: "none", borderRadius: 20,
+            background: form.active ? form.color : "var(--text-disabled)", border: "none", borderRadius: 20,
             width: 52, height: 28, cursor: "pointer", position: "relative", transition: "background .2s"
           }}>
             <div style={{
@@ -1070,27 +1058,27 @@ function RoomFormModal({ room, onSave, onClose }) {
       </div>
 
       {error && (
-        <div style={{ marginTop: 16, background: "#1f0000", border: "1px solid #ef4444", borderRadius: 10, padding: "12px 16px", color: "#ef4444", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+        <div style={{ marginTop: 16, background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 10, padding: "12px 16px", color: "var(--danger)", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
           <AlertCircle size={16} /> {error}
         </div>
       )}
 
       {/* Preview */}
-      <div style={{ marginTop: 20, background: "#111320", border: `1px solid ${form.color}44`, borderLeft: `4px solid ${form.color}`, borderRadius: 12, padding: "14px 16px" }}>
-        <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>Preview Kartu</div>
+      <div style={{ marginTop: 20, background: "var(--panel-elevated)", border: `1px solid ${form.color}44`, borderLeft: `4px solid ${form.color}`, borderRadius: 12, padding: "14px 16px" }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>Preview Kartu</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{form.name || "Nama Ruangan"}</div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{form.floor} · {form.capacity} orang · {form.amenities.length} fasilitas</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{form.floor} · {form.capacity} orang · {form.amenities.length} fasilitas</div>
           </div>
-          <span style={{ background: form.active ? "#052e16" : "#1f2937", color: form.active ? "#10b981" : "#6b7280", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>
+          <span style={{ background: form.active ? "var(--success-bg)" : "var(--surface-muted)", color: form.active ? "var(--success)" : "var(--text-muted)", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>
             {form.active ? "Aktif" : "Nonaktif"}
           </span>
         </div>
       </div>
 
       <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-        <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>Batal</button>
+        <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>Batal</button>
         <button onClick={submit} style={{ flex: 2, background: form.color, border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>
           {isEdit ? "Simpan Perubahan" : "Tambah Ruangan"} →
         </button>
@@ -1104,25 +1092,25 @@ function DeleteConfirmModal({ room, bookingCount, onConfirm, onClose }) {
   return (
     <Modal onClose={onClose}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ width: 56, height: 56, background: "#1f0000", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-          <Trash2 size={26} color="#ef4444" />
+        <div style={{ width: 56, height: 56, background: "var(--danger-bg)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <Trash2 size={26} color="var(--danger)" />
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Hapus Ruangan?</h2>
-        <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 20 }}>
-          Anda akan menghapus <span style={{ color: "#f9fafb", fontWeight: 600 }}>{room.name}</span> secara permanen.
+        <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 20 }}>
+          Anda akan menghapus <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{room.name}</span> secara permanen.
         </p>
         {bookingCount > 0 && (
-          <div style={{ background: "#1c1200", border: "1px solid #f59e0b44", borderRadius: 12, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
-            <AlertCircle size={18} color="#f59e0b" style={{ flexShrink: 0 }} />
+          <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-soft)", borderRadius: 12, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
+            <AlertCircle size={18} color="var(--warning)" style={{ flexShrink: 0 }} />
             <div style={{ fontSize: 13 }}>
-              <span style={{ color: "#f59e0b", fontWeight: 700 }}>{bookingCount} booking aktif</span>
-              <span style={{ color: "#9ca3af" }}> di ruangan ini akan ikut dibatalkan.</span>
+              <span style={{ color: "var(--warning)", fontWeight: 700 }}>{bookingCount} booking aktif</span>
+              <span style={{ color: "var(--text-secondary)" }}> di ruangan ini akan ikut dibatalkan.</span>
             </div>
           </div>
         )}
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Batal</button>
-          <button onClick={onConfirm} style={{ flex: 1, background: "#ef4444", border: "none", color: "#fff", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>Hapus Sekarang</button>
+          <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Batal</button>
+          <button onClick={onConfirm} style={{ flex: 1, background: "var(--danger)", border: "none", color: "#fff", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>Hapus Sekarang</button>
         </div>
       </div>
     </Modal>
@@ -1155,8 +1143,8 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
   };
 
   const inputStyle = {
-    background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10,
-    color: "#f9fafb", padding: "9px 14px", fontSize: 14,
+    background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10,
+    color: "var(--text-primary)", padding: "9px 14px", fontSize: 14,
     fontFamily: "'DM Sans', sans-serif", outline: "none"
   };
 
@@ -1166,10 +1154,10 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Kelola Ruangan</h2>
-          <p style={{ color: "#6b7280", fontSize: 14 }}>
-            <span style={{ color: "#10b981", fontWeight: 600 }}>{rooms.filter(r => r.active).length} aktif</span>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>{rooms.filter(r => r.active).length} aktif</span>
             {" · "}
-            <span style={{ color: "#6b7280" }}>{rooms.filter(r => !r.active).length} nonaktif</span>
+            <span style={{ color: "var(--text-muted)" }}>{rooms.filter(r => !r.active).length} nonaktif</span>
             {" · "}
             {rooms.length} total ruangan
           </p>
@@ -1191,14 +1179,14 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
           [Users, "Total Kapasitas", rooms.filter(r => r.active).reduce((s, r) => s + r.capacity, 0) + " orang", "#f59e0b"],
           [BarChart2, "Booking Hari Ini", bookings.filter(b => b.date === todayStr && b.status !== "cancelled").length, "#ec4899"],
         ].map(([Icon, label, val, color]) => (
-          <div key={label} style={{ background: "#0f1117", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
+          <div key={label} style={{ background: "var(--panel-bg)", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div style={{ width: 36, height: 36, background: color + "22", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon size={18} color={color} />
               </div>
             </div>
             <div style={{ fontSize: 26, fontWeight: 800, color, marginBottom: 2 }}>{val}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>{label}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -1206,7 +1194,7 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
           <input placeholder="Cari nama atau lantai..." value={search} onChange={e => setSearch(e.target.value)}
             style={{ ...inputStyle, paddingLeft: 34, width: "100%", boxSizing: "border-box" }} />
         </div>
@@ -1224,14 +1212,14 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
 
       {/* Room Table */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
           <Building2 size={40} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
           <p>Tidak ada ruangan ditemukan</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Table header */}
-          <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr 2fr 1fr 1fr auto", gap: 12, padding: "8px 18px", fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr 2fr 1fr 1fr auto", gap: 12, padding: "8px 18px", fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8 }}>
             <span>Ruangan</span>
             <span>Lantai</span>
             <span>Kapasitas</span>
@@ -1247,8 +1235,8 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
               <div key={room.id} style={{
                 display: "grid", gridTemplateColumns: "3fr 1fr 1fr 2fr 1fr 1fr auto",
                 gap: 12, padding: "16px 18px", alignItems: "center",
-                background: "#0f1117", border: `1px solid ${room.active ? room.color + "22" : "#1f2937"}`,
-                borderLeft: `4px solid ${room.active ? room.color : "#374151"}`,
+                background: "var(--panel-bg)", border: `1px solid ${room.active ? room.color + "22" : "var(--surface-muted)"}`,
+                borderLeft: `4px solid ${room.active ? room.color : "var(--text-disabled)"}`,
                 borderRadius: 14, transition: "all .15s",
                 opacity: room.active ? 1 : 0.6
               }}>
@@ -1259,12 +1247,12 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{room.name}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{room.description}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{room.description}</div>
                   </div>
                 </div>
 
                 {/* Floor */}
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#9ca3af" }}>{room.floor}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>{room.floor}</div>
 
                 {/* Capacity */}
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -1277,29 +1265,29 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
                   {room.amenities.slice(0, 3).map(a => {
                     const Icon = AMENITY_ICONS[a];
                     return Icon ? (
-                      <div key={a} style={{ background: "#1a1d27", borderRadius: 6, padding: "3px 7px", display: "flex", alignItems: "center", gap: 3 }}>
+                      <div key={a} style={{ background: "var(--surface-bg)", borderRadius: 6, padding: "3px 7px", display: "flex", alignItems: "center", gap: 3 }}>
                         <Icon size={10} color={room.color} />
-                        <span style={{ fontSize: 10, color: "#6b7280" }}>{a}</span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{a}</span>
                       </div>
                     ) : null;
                   })}
                   {room.amenities.length > 3 && (
-                    <div style={{ background: "#1a1d27", borderRadius: 6, padding: "3px 7px", fontSize: 10, color: "#6b7280" }}>+{room.amenities.length - 3}</div>
+                    <div style={{ background: "var(--surface-bg)", borderRadius: 6, padding: "3px 7px", fontSize: 10, color: "var(--text-muted)" }}>+{room.amenities.length - 3}</div>
                   )}
                 </div>
 
                 {/* Booking count */}
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{stats.total}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{stats.today} hari ini</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{stats.today} hari ini</div>
                 </div>
 
                 {/* Active toggle */}
                 <div>
                   <button onClick={() => onToggleActive(room.id)} style={{
-                    background: room.active ? "#052e16" : "#1f2937",
-                    color: room.active ? "#10b981" : "#6b7280",
-                    border: `1px solid ${room.active ? "#10b98133" : "#374151"}`,
+                    background: room.active ? "var(--success-bg)" : "var(--surface-muted)",
+                    color: room.active ? "var(--success)" : "var(--text-muted)",
+                    border: `1px solid ${room.active ? "var(--success-soft)" : "var(--text-disabled)"}`,
                     borderRadius: 20, padding: "4px 12px", cursor: "pointer",
                     fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap"
                   }}>
@@ -1310,16 +1298,16 @@ function RoomsView({ rooms, bookings, onAdd, onEdit, onDelete, onToggleActive })
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => onEdit(room)} style={{
-                    width: 34, height: 34, background: "#1a1d27", border: "1px solid #2d3141",
+                    width: 34, height: 34, background: "var(--surface-bg)", border: "1px solid var(--surface-muted)",
                     borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#9ca3af", transition: "all .15s"
+                    color: "var(--text-secondary)", transition: "all .15s"
                   }}>
                     <Pencil size={14} />
                   </button>
                   <button onClick={() => onDelete(room)} style={{
-                    width: 34, height: 34, background: "#1f0000", border: "1px solid #ef444422",
+                    width: 34, height: 34, background: "var(--danger-bg)", border: "1px solid var(--danger-soft)",
                     borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#ef4444", transition: "all .15s"
+                    color: "var(--danger)", transition: "all .15s"
                   }}>
                     <Trash2 size={14} />
                   </button>
@@ -1355,8 +1343,8 @@ function DeptFormModal({ dept, users, onSave, onClose }) {
     onSave({ ...form, id: dept?.id || Date.now() });
   };
 
-  const inputStyle = { background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb", padding: "10px 14px", width: "100%", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box" };
-  const labelStyle = { fontSize: 12, color: "#9ca3af", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
+  const inputStyle = { background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)", padding: "10px 14px", width: "100%", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box" };
+  const labelStyle = { fontSize: 12, color: "var(--text-secondary)", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
 
   return (
     <Modal onClose={onClose}>
@@ -1367,10 +1355,10 @@ function DeptFormModal({ dept, users, onSave, onClose }) {
           </div>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? "Edit Departemen" : "Tambah Departemen"}</h2>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>{isEdit ? `Perbarui data ${dept.name}` : "Daftarkan departemen baru"}</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{isEdit ? `Perbarui data ${dept.name}` : "Daftarkan departemen baru"}</p>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        <button onClick={onClose} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
       </div>
 
       <div style={{ display: "grid", gap: 16 }}>
@@ -1395,36 +1383,36 @@ function DeptFormModal({ dept, users, onSave, onClose }) {
             {DEPT_COLORS.map(c => (
               <button key={c} onClick={() => inp("color", c)} style={{ width: 32, height: 32, borderRadius: 8, background: c, border: `3px solid ${form.color === c ? "#fff" : "transparent"}`, cursor: "pointer", transition: "transform .15s", transform: form.color === c ? "scale(1.15)" : "scale(1)" }} />
             ))}
-            <input type="color" value={form.color} onChange={e => inp("color", e.target.value)} style={{ width: 36, height: 32, borderRadius: 6, border: "1px solid #2d3141", background: "#1a1d27", cursor: "pointer" }} />
+            <input type="color" value={form.color} onChange={e => inp("color", e.target.value)} style={{ width: 36, height: 32, borderRadius: 6, border: "1px solid var(--surface-muted)", background: "var(--surface-bg)", cursor: "pointer" }} />
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1a1d27", borderRadius: 12, padding: "14px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface-bg)", borderRadius: 12, padding: "14px 18px" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>Status Aktif</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Departemen nonaktif tidak muncul di form booking</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Departemen nonaktif tidak muncul di form booking</div>
           </div>
-          <button onClick={() => inp("active", !form.active)} style={{ background: form.active ? form.color : "#374151", border: "none", borderRadius: 20, width: 52, height: 28, cursor: "pointer", position: "relative", transition: "background .2s" }}>
+          <button onClick={() => inp("active", !form.active)} style={{ background: form.active ? form.color : "var(--text-disabled)", border: "none", borderRadius: 20, width: 52, height: 28, cursor: "pointer", position: "relative", transition: "background .2s" }}>
             <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: form.active ? 27 : 3, transition: "left .2s" }} />
           </button>
         </div>
       </div>
 
       {/* Preview */}
-      <div style={{ marginTop: 16, background: "#111320", border: `1px solid ${form.color}44`, borderLeft: `4px solid ${form.color}`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ marginTop: 16, background: "var(--panel-elevated)", border: `1px solid ${form.color}44`, borderLeft: `4px solid ${form.color}`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 36, height: 36, background: form.color + "22", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Briefcase size={18} color={form.color} />
         </div>
         <div>
           <div style={{ fontWeight: 700, fontSize: 14 }}>{form.name || "Nama Departemen"}</div>
-          <div style={{ fontSize: 12, color: "#9ca3af" }}>{form.head ? `Kepala: ${form.head}` : "Tanpa kepala"}</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{form.head ? `Kepala: ${form.head}` : "Tanpa kepala"}</div>
         </div>
-        <span style={{ marginLeft: "auto", background: form.active ? "#052e16" : "#1f2937", color: form.active ? "#10b981" : "#6b7280", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{form.active ? "Aktif" : "Nonaktif"}</span>
+        <span style={{ marginLeft: "auto", background: form.active ? "var(--success-bg)" : "var(--surface-muted)", color: form.active ? "var(--success)" : "var(--text-muted)", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{form.active ? "Aktif" : "Nonaktif"}</span>
       </div>
 
-      {error && <div style={{ marginTop: 14, background: "#1f0000", border: "1px solid #ef4444", borderRadius: 10, padding: "12px 16px", color: "#ef4444", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}><AlertCircle size={16} />{error}</div>}
+      {error && <div style={{ marginTop: 14, background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 10, padding: "12px 16px", color: "var(--danger)", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}><AlertCircle size={16} />{error}</div>}
 
       <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-        <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
+        <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
         <button onClick={submit} style={{ flex: 2, background: form.color, border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 700 }}>
           {isEdit ? "Simpan Perubahan" : "Tambah Departemen"} →
         </button>
@@ -1446,15 +1434,15 @@ function DepartmentsView({ departments, users, bookings, onAdd, onEdit, onDelete
     return { members: members.length, totalBookings, todayBookings };
   };
 
-  const inputStyle = { background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb", padding: "9px 14px", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none" };
+  const inputStyle = { background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)", padding: "9px 14px", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none" };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Kelola Departemen</h2>
-          <p style={{ color: "#6b7280", fontSize: 14 }}>
-            <span style={{ color: "#10b981", fontWeight: 600 }}>{departments.filter(d => d.active).length} aktif</span>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>{departments.filter(d => d.active).length} aktif</span>
             {" · "}{departments.filter(d => !d.active).length} nonaktif{" · "}{departments.length} total
           </p>
         </div>
@@ -1471,17 +1459,17 @@ function DepartmentsView({ departments, users, bookings, onAdd, onEdit, onDelete
           [Users, "Total Anggota", users.filter(u => u.active).length, "#f59e0b"],
           [BarChart2, "Booking Bulan Ini", bookings.filter(b => b.status !== "cancelled").length, "#ec4899"],
         ].map(([Icon, label, val, color]) => (
-          <div key={label} style={{ background: "#0f1117", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
+          <div key={label} style={{ background: "var(--panel-bg)", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
             <div style={{ width: 36, height: 36, background: color + "22", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}><Icon size={18} color={color} /></div>
             <div style={{ fontSize: 26, fontWeight: 800, color, marginBottom: 2 }}>{val}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>{label}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Search */}
       <div style={{ position: "relative", maxWidth: 360, marginBottom: 20 }}>
-        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+        <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
         <input placeholder="Cari departemen..." value={search} onChange={e => setSearch(e.target.value)}
           style={{ ...inputStyle, paddingLeft: 34, width: "100%", boxSizing: "border-box" }} />
       </div>
@@ -1492,8 +1480,8 @@ function DepartmentsView({ departments, users, bookings, onAdd, onEdit, onDelete
           const stats = getDeptStats(dept.name);
           const headUser = users.find(u => u.name === dept.head);
           return (
-            <div key={dept.id} style={{ background: "#0f1117", border: `1px solid ${dept.active ? dept.color + "33" : "#1f2937"}`, borderRadius: 16, padding: "20px", position: "relative", opacity: dept.active ? 1 : 0.6, transition: "all .15s" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: dept.active ? dept.color : "#374151", borderRadius: "16px 16px 0 0" }} />
+            <div key={dept.id} style={{ background: "var(--panel-bg)", border: `1px solid ${dept.active ? dept.color + "33" : "var(--surface-muted)"}`, borderRadius: 16, padding: "20px", position: "relative", opacity: dept.active ? 1 : 0.6, transition: "all .15s" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: dept.active ? dept.color : "var(--text-disabled)", borderRadius: "16px 16px 0 0" }} />
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1502,23 +1490,23 @@ function DepartmentsView({ departments, users, bookings, onAdd, onEdit, onDelete
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>{dept.name}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{dept.description || "Tidak ada deskripsi"}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{dept.description || "Tidak ada deskripsi"}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => onEdit(dept)} style={{ width: 32, height: 32, background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}><Pencil size={13} /></button>
-                  <button onClick={() => onDelete(dept)} style={{ width: 32, height: 32, background: "#1f0000", border: "1px solid #ef444422", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444" }}><Trash2 size={13} /></button>
+                  <button onClick={() => onEdit(dept)} style={{ width: 32, height: 32, background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}><Pencil size={13} /></button>
+                  <button onClick={() => onDelete(dept)} style={{ width: 32, height: 32, background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--danger)" }}><Trash2 size={13} /></button>
                 </div>
               </div>
 
               {/* Kepala */}
               {dept.head && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#1a1d27", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-bg)", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: headUser?.avatarColor || dept.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                     {dept.head.split(" ").map(x => x[0]).join("").slice(0, 2)}
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>Kepala</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Kepala</div>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{dept.head}</div>
                   </div>
                   <Crown size={13} color="#f59e0b" style={{ marginLeft: "auto" }} />
@@ -1532,16 +1520,16 @@ function DepartmentsView({ departments, users, bookings, onAdd, onEdit, onDelete
                   [BarChart2, stats.totalBookings, "Booking"],
                   [Calendar, stats.todayBookings, "Hari ini"],
                 ].map(([Icon, val, lbl]) => (
-                  <div key={lbl} style={{ background: "#111320", borderRadius: 8, padding: "8px", textAlign: "center" }}>
+                  <div key={lbl} style={{ background: "var(--panel-elevated)", borderRadius: 8, padding: "8px", textAlign: "center" }}>
                     <Icon size={13} color={dept.color} style={{ marginBottom: 3 }} />
                     <div style={{ fontSize: 16, fontWeight: 800 }}>{val}</div>
-                    <div style={{ fontSize: 10, color: "#6b7280" }}>{lbl}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{lbl}</div>
                   </div>
                 ))}
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <button onClick={() => onToggleActive(dept.id)} style={{ background: dept.active ? "#052e16" : "#1f2937", color: dept.active ? "#10b981" : "#6b7280", border: `1px solid ${dept.active ? "#10b98133" : "#374151"}`, borderRadius: 20, padding: "4px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>
+                <button onClick={() => onToggleActive(dept.id)} style={{ background: dept.active ? "var(--success-bg)" : "var(--surface-muted)", color: dept.active ? "var(--success)" : "var(--text-muted)", border: `1px solid ${dept.active ? "var(--success-soft)" : "var(--text-disabled)"}`, borderRadius: 20, padding: "4px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>
                   {dept.active ? "● Aktif" : "○ Nonaktif"}
                 </button>
                 <div style={{ fontSize: 12, color: dept.color, fontWeight: 600 }}>{dept.color}</div>
@@ -1559,20 +1547,20 @@ function GenericDeleteModal({ title, subtitle, warning, onConfirm, onClose }) {
   return (
     <Modal onClose={onClose}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ width: 56, height: 56, background: "#1f0000", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-          <Trash2 size={26} color="#ef4444" />
+        <div style={{ width: 56, height: 56, background: "var(--danger-bg)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          <Trash2 size={26} color="var(--danger)" />
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{title}</h2>
-        <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: warning ? 16 : 24 }} dangerouslySetInnerHTML={{ __html: subtitle }} />
+        <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: warning ? 16 : 24 }} dangerouslySetInnerHTML={{ __html: subtitle }} />
         {warning && (
-          <div style={{ background: "#1c1200", border: "1px solid #f59e0b44", borderRadius: 12, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
-            <AlertCircle size={18} color="#f59e0b" style={{ flexShrink: 0 }} />
-            <div style={{ fontSize: 13, color: "#9ca3af" }} dangerouslySetInnerHTML={{ __html: warning }} />
+          <div style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-soft)", borderRadius: 12, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
+            <AlertCircle size={18} color="var(--warning)" style={{ flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }} dangerouslySetInnerHTML={{ __html: warning }} />
           </div>
         )}
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
-          <button onClick={onConfirm} style={{ flex: 1, background: "#ef4444", border: "none", color: "#fff", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>Hapus Sekarang</button>
+          <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
+          <button onClick={onConfirm} style={{ flex: 1, background: "var(--danger)", border: "none", color: "#fff", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>Hapus Sekarang</button>
         </div>
       </div>
     </Modal>
@@ -1583,7 +1571,7 @@ function GenericDeleteModal({ title, subtitle, warning, onConfirm, onClose }) {
 const USER_ROLES = [
   { value: "admin", label: "Admin", desc: "Dapat mengelola semua data & booking", color: "#f59e0b", icon: Crown },
   { value: "member", label: "Member", desc: "Dapat membuat dan mengelola booking sendiri", color: "#6366f1", icon: UserCheck },
-  { value: "viewer", label: "Viewer", desc: "Hanya bisa melihat jadwal", color: "#6b7280", icon: Eye },
+  { value: "viewer", label: "Viewer", desc: "Hanya bisa melihat jadwal", color: "var(--text-muted)", icon: Eye },
 ];
 const AVATAR_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ec4899", "#14b8a6", "#f97316", "#8b5cf6", "#06b6d4", "#ef4444", "#84cc16"];
 
@@ -1613,8 +1601,8 @@ function UserFormModal({ user, departments, onSave, onClose }) {
 
   const initials = form.name.split(" ").map(x => x[0]).join("").slice(0, 2).toUpperCase() || "??";
   const selectedRole = USER_ROLES.find(r => r.value === form.role);
-  const inputStyle = { background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb", padding: "10px 14px", width: "100%", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box" };
-  const labelStyle = { fontSize: 12, color: "#9ca3af", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
+  const inputStyle = { background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)", padding: "10px 14px", width: "100%", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box" };
+  const labelStyle = { fontSize: 12, color: "var(--text-secondary)", marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.8 };
 
   return (
     <Modal onClose={onClose} wide>
@@ -1623,10 +1611,10 @@ function UserFormModal({ user, departments, onSave, onClose }) {
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: form.avatarColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff" }}>{initials}</div>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700 }}>{isEdit ? "Edit Pengguna" : "Tambah Pengguna"}</h2>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>{isEdit ? `Perbarui profil ${user.name}` : "Daftarkan akun pengguna baru"}</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{isEdit ? `Perbarui profil ${user.name}` : "Daftarkan akun pengguna baru"}</p>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        <button onClick={onClose} style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -1639,7 +1627,7 @@ function UserFormModal({ user, departments, onSave, onClose }) {
         <div>
           <label style={labelStyle}>Email *</label>
           <div style={{ position: "relative" }}>
-            <Mail size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+            <Mail size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input style={{ ...inputStyle, paddingLeft: 34 }} placeholder="budi@company.com" value={form.email} onChange={e => inp("email", e.target.value)} />
           </div>
         </div>
@@ -1647,14 +1635,14 @@ function UserFormModal({ user, departments, onSave, onClose }) {
         <div>
           <label style={labelStyle}>Nomor Telepon</label>
           <div style={{ position: "relative" }}>
-            <Phone size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+            <Phone size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input style={{ ...inputStyle, paddingLeft: 34 }} placeholder="+62 812-xxxx-xxxx" value={form.phone} onChange={e => inp("phone", e.target.value)} />
           </div>
         </div>
         <div>
           <label style={labelStyle}>Password {!isEdit ? "*" : "(opsional)"}</label>
           <div style={{ position: "relative" }}>
-            <KeyRound size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+            <KeyRound size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input type="password" style={{ ...inputStyle, paddingLeft: 34 }} placeholder={isEdit ? "Kosongkan jika tidak diubah" : "Masukkan password awal"} value={form.password} onChange={e => inp("password", e.target.value)} />
           </div>
         </div>
@@ -1673,13 +1661,13 @@ function UserFormModal({ user, departments, onSave, onClose }) {
               const RIcon = r.icon;
               const sel = form.role === r.value;
               return (
-                <button key={r.value} onClick={() => inp("role", r.value)} style={{ padding: "14px 12px", borderRadius: 12, border: `2px solid ${sel ? r.color : "#2d3141"}`, background: sel ? r.color + "15" : "#1a1d27", cursor: "pointer", textAlign: "left", transition: "all .15s" }}>
+                <button key={r.value} onClick={() => inp("role", r.value)} style={{ padding: "14px 12px", borderRadius: 12, border: `2px solid ${sel ? r.color : "var(--border-color)"}`, background: sel ? r.color + "15" : "var(--surface-bg)", cursor: "pointer", textAlign: "left", transition: "all .15s" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <RIcon size={16} color={r.color} />
-                    <span style={{ fontWeight: 700, fontSize: 14, color: sel ? r.color : "#f9fafb" }}>{r.label}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: sel ? r.color : "var(--text-primary)" }}>{r.label}</span>
                     {sel && <Check size={13} color={r.color} style={{ marginLeft: "auto" }} />}
                   </div>
-                  <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{r.desc}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>{r.desc}</div>
                 </button>
               );
             })}
@@ -1697,34 +1685,34 @@ function UserFormModal({ user, departments, onSave, onClose }) {
           </div>
         </div>
         {/* Active */}
-        <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1a1d27", borderRadius: 12, padding: "14px 18px" }}>
+        <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface-bg)", borderRadius: 12, padding: "14px 18px" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>Status Akun</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Pengguna nonaktif tidak bisa membuat booking</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Pengguna nonaktif tidak bisa membuat booking</div>
           </div>
-          <button onClick={() => inp("active", !form.active)} style={{ background: form.active ? form.avatarColor : "#374151", border: "none", borderRadius: 20, width: 52, height: 28, cursor: "pointer", position: "relative", transition: "background .2s" }}>
+          <button onClick={() => inp("active", !form.active)} style={{ background: form.active ? form.avatarColor : "var(--text-disabled)", border: "none", borderRadius: 20, width: 52, height: 28, cursor: "pointer", position: "relative", transition: "background .2s" }}>
             <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: form.active ? 27 : 3, transition: "left .2s" }} />
           </button>
         </div>
       </div>
 
-      {error && <div style={{ marginTop: 14, background: "#1f0000", border: "1px solid #ef4444", borderRadius: 10, padding: "12px 16px", color: "#ef4444", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}><AlertCircle size={16} />{error}</div>}
+      {error && <div style={{ marginTop: 14, background: "var(--danger-bg)", border: "1px solid var(--danger)", borderRadius: 10, padding: "12px 16px", color: "var(--danger)", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}><AlertCircle size={16} />{error}</div>}
 
       {/* Preview card */}
-      <div style={{ marginTop: 16, background: "#111320", border: `1px solid ${form.avatarColor}44`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ marginTop: 16, background: "var(--panel-elevated)", border: `1px solid ${form.avatarColor}44`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ width: 44, height: 44, borderRadius: "50%", background: form.avatarColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{initials}</div>
         <div>
           <div style={{ fontWeight: 700, fontSize: 14 }}>{form.name || "Nama Pengguna"}</div>
-          <div style={{ fontSize: 12, color: "#9ca3af" }}>{form.email || "email@company.com"} · {form.department || "—"}</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{form.email || "email@company.com"} · {form.department || "—"}</div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           <span style={{ background: selectedRole?.color + "22", color: selectedRole?.color, borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{selectedRole?.label}</span>
-          <span style={{ background: form.active ? "#052e16" : "#1f2937", color: form.active ? "#10b981" : "#6b7280", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{form.active ? "Aktif" : "Nonaktif"}</span>
+          <span style={{ background: form.active ? "var(--success-bg)" : "var(--surface-muted)", color: form.active ? "var(--success)" : "var(--text-muted)", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{form.active ? "Aktif" : "Nonaktif"}</span>
         </div>
       </div>
 
       <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-        <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
+        <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Batal</button>
         <button onClick={submit} style={{ flex: 2, background: form.avatarColor, border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 700 }}>
           {isEdit ? "Simpan Perubahan" : "Tambah Pengguna"} →
         </button>
@@ -1759,15 +1747,15 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
     upcoming: bookings.filter(b => b.organizer === userName && b.date >= todayStr && b.status === "confirmed").length,
   });
 
-  const inputStyle = { background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 10, color: "#f9fafb", padding: "9px 14px", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none" };
+  const inputStyle = { background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 10, color: "var(--text-primary)", padding: "9px 14px", fontSize: 14, fontFamily: "'DM Sans',sans-serif", outline: "none" };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Kelola Pengguna</h2>
-          <p style={{ color: "#6b7280", fontSize: 14 }}>
-            <span style={{ color: "#10b981", fontWeight: 600 }}>{users.filter(u => u.active).length} aktif</span>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>{users.filter(u => u.active).length} aktif</span>
             {" · "}{users.filter(u => !u.active).length} nonaktif{" · "}{users.length} total
           </p>
         </div>
@@ -1782,12 +1770,12 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
           [Users, "Total User", users.length, "#6366f1"],
           [Crown, "Admin", users.filter(u => u.role === "admin").length, "#f59e0b"],
           [UserCheck, "Member", users.filter(u => u.role === "member").length, "#10b981"],
-          [Eye, "Viewer", users.filter(u => u.role === "viewer").length, "#6b7280"],
+          [Eye, "Viewer", users.filter(u => u.role === "viewer").length, "var(--text-muted)"],
         ].map(([Icon, label, val, color]) => (
-          <div key={label} style={{ background: "#0f1117", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
+          <div key={label} style={{ background: "var(--panel-bg)", border: `1px solid ${color}22`, borderRadius: 14, padding: "16px 18px" }}>
             <div style={{ width: 36, height: 36, background: color + "22", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}><Icon size={18} color={color} /></div>
             <div style={{ fontSize: 26, fontWeight: 800, color, marginBottom: 2 }}>{val}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>{label}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -1795,7 +1783,7 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
           <input placeholder="Cari nama atau email..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: 34, width: "100%", boxSizing: "border-box" }} />
         </div>
         <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -1815,13 +1803,13 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
 
       {/* Table header */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
           <Users size={40} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
           <p>Tidak ada pengguna ditemukan</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "8px 18px", fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "8px 18px", fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.8 }}>
             <span>Pengguna</span><span>Departemen</span><span>Role</span><span>Booking</span><span>Upcoming</span><span>Status</span><span>Aksi</span>
           </div>
           {filtered.map(user => {
@@ -1830,7 +1818,7 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
             const deptConf = departments.find(d => d.name === user.department);
             const RoleIcon = roleConf?.icon || Eye;
             return (
-              <div key={user.id} style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "14px 18px", alignItems: "center", background: "#0f1117", border: `1px solid ${user.active ? "#1f2937" : "#111"}`, borderLeft: `4px solid ${user.active ? user.avatarColor : "#374151"}`, borderRadius: 14, opacity: user.active ? 1 : 0.55, transition: "all .15s" }}>
+              <div key={user.id} style={{ display: "grid", gridTemplateColumns: "2.5fr 1.5fr 1fr 1fr 1fr 1fr auto", gap: 12, padding: "14px 18px", alignItems: "center", background: "var(--panel-bg)", border: `1px solid ${user.active ? "var(--surface-muted)" : "#111"}`, borderLeft: `4px solid ${user.active ? user.avatarColor : "var(--text-disabled)"}`, borderRadius: 14, opacity: user.active ? 1 : 0.55, transition: "all .15s" }}>
                 {/* Avatar + name */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: "50%", background: user.avatarColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
@@ -1838,8 +1826,8 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{user.name}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{user.email}</div>
-                    {user.phone && <div style={{ fontSize: 11, color: "#4b5563" }}>{user.phone}</div>}
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{user.email}</div>
+                    {user.phone && <div style={{ fontSize: 11, color: "var(--text-faint)" }}>{user.phone}</div>}
                   </div>
                 </div>
                 {/* Dept */}
@@ -1858,14 +1846,14 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#6366f1" }}>{stats.upcoming}</div>
                 {/* Toggle */}
                 <div>
-                  <button onClick={() => onToggleActive(user.id)} style={{ background: user.active ? "#052e16" : "#1f2937", color: user.active ? "#10b981" : "#6b7280", border: `1px solid ${user.active ? "#10b98133" : "#374151"}`, borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+                  <button onClick={() => onToggleActive(user.id)} style={{ background: user.active ? "var(--success-bg)" : "var(--surface-muted)", color: user.active ? "var(--success)" : "var(--text-muted)", border: `1px solid ${user.active ? "var(--success-soft)" : "var(--text-disabled)"}`, borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
                     {user.active ? "Aktif" : "Nonaktif"}
                   </button>
                 </div>
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => onEdit(user)} style={{ width: 34, height: 34, background: "#1a1d27", border: "1px solid #2d3141", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}><Pencil size={14} /></button>
-                  <button onClick={() => onDelete(user)} style={{ width: 34, height: 34, background: "#1f0000", border: "1px solid #ef444422", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444" }}><Trash2 size={14} /></button>
+                  <button onClick={() => onEdit(user)} style={{ width: 34, height: 34, background: "var(--surface-bg)", border: "1px solid var(--surface-muted)", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}><Pencil size={14} /></button>
+                  <button onClick={() => onDelete(user)} style={{ width: 34, height: 34, background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--danger)" }}><Trash2 size={14} /></button>
                 </div>
               </div>
             );
@@ -1920,14 +1908,14 @@ function LoginPage({ onLogin }) {
   };
 
   const inpStyle = (hasErr) => ({
-    width: "100%", boxSizing: "border-box", background: "#0f1117",
-    border: `1px solid ${hasErr ? "#ef4444" : "#2d3141"}`, borderRadius: 12,
-    color: "#f9fafb", padding: "13px 16px", fontSize: 15,
+    width: "100%", boxSizing: "border-box", background: "var(--panel-bg)",
+    border: `1px solid ${hasErr ? "var(--danger)" : "var(--border-color)"}`, borderRadius: 12,
+    color: "var(--text-primary)", padding: "13px 16px", fontSize: 15,
     fontFamily: "'DM Sans',sans-serif", outline: "none",
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080b11", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif", padding: 20, position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "var(--app-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif", padding: 20, position: "relative", overflow: "hidden" }}>
       {/* Background orbs */}
       <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,#6366f130,transparent 70%)", top: -150, right: -100, pointerEvents: "none" }} />
       <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,#8b5cf620,transparent 70%)", bottom: -100, left: -80, pointerEvents: "none" }} />
@@ -1939,17 +1927,17 @@ function LoginPage({ onLogin }) {
             <Building2 size={30} color="#fff" />
           </div>
           <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6 }}>MeetSpace</h1>
-          <p style={{ color: "#6b7280", fontSize: 15 }}>Masuk untuk mengelola booking ruang meeting</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 15 }}>Masuk untuk mengelola booking ruang meeting</p>
         </div>
 
         {/* Card */}
-        <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 20, padding: "32px", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>
+        <div style={{ background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 20, padding: "32px", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>
           <div>
             {/* Email */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.8, display: "block", marginBottom: 8, fontWeight: 600 }}>Email</label>
+              <label style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: 0.8, display: "block", marginBottom: 8, fontWeight: 600 }}>Email</label>
               <div style={{ position: "relative" }}>
-                <Mail size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+                <Mail size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
                 <input type="email" placeholder="nama@company.com" value={email} onChange={e => { setEmail(e.target.value); setError(""); }}
                   onKeyDown={e => e.key === "Enter" && handleLogin()}
                   style={{ ...inpStyle(!!error), paddingLeft: 44 }} />
@@ -1958,13 +1946,13 @@ function LoginPage({ onLogin }) {
 
             {/* Password */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.8, display: "block", marginBottom: 8, fontWeight: 600 }}>Password</label>
+              <label style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: 0.8, display: "block", marginBottom: 8, fontWeight: 600 }}>Password</label>
               <div style={{ position: "relative" }}>
-                <Lock size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+                <Lock size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
                 <input type={showPass ? "text" : "password"} placeholder="Masukkan password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
                   onKeyDown={e => e.key === "Enter" && handleLogin()}
                   style={{ ...inpStyle(!!error), paddingLeft: 44, paddingRight: 44 }} />
-                <button onClick={() => setShowPass(s => !s)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex" }}>
+                <button onClick={() => setShowPass(s => !s)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -1972,15 +1960,15 @@ function LoginPage({ onLogin }) {
 
             {/* Remember me */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-              <button onClick={() => setRemember(r => !r)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${remember ? "#6366f1" : "#374151"}`, background: remember ? "#6366f1" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
+              <button onClick={() => setRemember(r => !r)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${remember ? "#6366f1" : "var(--text-disabled)"}`, background: remember ? "#6366f1" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
                 {remember && <Check size={12} color="#fff" />}
               </button>
-              <span style={{ fontSize: 13, color: "#9ca3af" }}>Ingat saya di perangkat ini</span>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Ingat saya di perangkat ini</span>
             </div>
 
             {/* Error */}
             {error && (
-              <div style={{ background: "#1f0000", border: "1px solid #ef444444", borderRadius: 10, padding: "12px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#ef4444" }}>
+              <div style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--danger)" }}>
                 <ShieldAlert size={16} style={{ flexShrink: 0 }} />
                 {error}
                 {locked && <span style={{ marginLeft: "auto", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{lockTimer}s</span>}
@@ -1988,7 +1976,7 @@ function LoginPage({ onLogin }) {
             )}
 
             {/* Submit */}
-            <button onClick={handleLogin} disabled={loading || locked} style={{ width: "100%", background: locked ? "#374151" : "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: locked ? "#6b7280" : "#fff", borderRadius: 12, padding: "14px", cursor: locked ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 16, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "opacity .2s", opacity: loading ? 0.7 : 1 }}>
+            <button onClick={handleLogin} disabled={loading || locked} style={{ width: "100%", background: locked ? "var(--text-disabled)" : "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: locked ? "var(--text-muted)" : "#fff", borderRadius: 12, padding: "14px", cursor: locked ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 16, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "opacity .2s", opacity: loading ? 0.7 : 1 }}>
               {loading ? <RefreshCw size={18} style={{ animation: "spin 1s linear infinite" }} /> : <LogIn size={18} />}
               {locked ? `Dikunci ${lockTimer}s` : loading ? "Memverifikasi..." : "Masuk"}
             </button>
@@ -1996,13 +1984,13 @@ function LoginPage({ onLogin }) {
         </div>
 
         {/* Security note */}
-        <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 12, color: "#4b5563" }}>
+        <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 12, color: "var(--text-faint)" }}>
           <Shield size={13} />
           <span>Halaman ini dilindungi enkripsi. Jangan bagikan kredensial Anda.</span>
         </div>
 
         {/* Public access note */}
-        <div style={{ marginTop: 12, background: "#0f1117", border: "1px solid #1f2937", borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6b7280" }}>
+        <div style={{ marginTop: 12, background: "var(--panel-bg)", border: "1px solid var(--surface-muted)", borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-muted)" }}>
           <Eye size={14} color="#6366f1" style={{ flexShrink: 0 }} />
           <span>Kalender, ketersediaan, dan analitik dapat dilihat tanpa login.</span>
         </div>
@@ -2022,12 +2010,12 @@ function LoginPromptModal({ onGoLogin, onClose }) {
           <KeyRound size={28} color="#6366f1" />
         </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Login Diperlukan</h2>
-        <p style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
           Anda harus masuk terlebih dahulu untuk melakukan booking atau mengakses fitur ini.
           <br />Halaman Kalender, Ketersediaan, dan Analytics tetap bisa dilihat tanpa login.
         </p>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Nanti Saja</button>
+          <button onClick={onClose} style={{ flex: 1, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Nanti Saja</button>
           <button onClick={onGoLogin} style={{ flex: 2, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: "#fff", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <LogIn size={16} /> Masuk Sekarang →
           </button>
@@ -2037,709 +2025,168 @@ function LoginPromptModal({ onGoLogin, onClose }) {
   );
 }
 
-// ─── LAYOUT WRAPPER ───────────────────────────────────────────────────────────
-function LayoutWrapper({ layout, children }) {
-  if (layout === "fluid") {
-    return (
-      <div style={{ width: "100%", height: "100vh", display: "flex" }}>
-        {children}
-      </div>
-    );
-  }
-  // Boxed
-  return (
-    <div style={{ width: "100%", minHeight: "100vh", background: "#04060a", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-      <div style={{ width: "100%", maxWidth: 1440, height: "calc(100vh - 32px)", display: "flex", borderRadius: 20, overflow: "hidden", border: "1px solid #1a1d27", boxShadow: "0 32px 100px rgba(0,0,0,.8)" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function MeetingApp() {
-  const [view, setView] = useState("calendar");
-  const [rooms, setRooms] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [modal, setModal] = useState(null);
-  const [toasts, setToasts] = useState([]);
-  const [initializing, setInitializing] = useState(true);
-
-  // ── Auth ──
-  const [authUser, setAuthUser] = useState(null);  // null = guest
-  const [showLogin, setShowLogin] = useState(false);
-
-  // ── Layout ──
-  const [layout, setLayout] = useState("boxed"); // "boxed" | "fluid"
-
-  const addToast = useCallback((message, type = "info") => {
-    const id = Date.now();
-    setToasts(t => [...t, { id, message, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
-  }, []);
-  const removeToast = useCallback((id) => setToasts(t => t.filter(x => x.id !== id)), []);
-
-  const refreshUsers = useCallback(async (currentUser) => {
-    if (!currentUser) {
-      setUsers([]);
-      return [];
-    }
-
-    const data = await apiRequest("/api/users");
-    const nextUsers = data?.users || [];
-    setUsers(nextUsers);
-    return nextUsers;
-  }, []);
-
-  const bootstrapApp = useCallback(async () => {
-    setInitializing(true);
-
-    try {
-      const [roomsData, departmentsData, bookingsData, sessionData] = await Promise.all([
-        apiRequest("/api/rooms"),
-        apiRequest("/api/departments"),
-        apiRequest("/api/bookings"),
-        apiRequest("/api/auth/me"),
-      ]);
-
-      const currentUser = sessionData?.user || null;
-      setRooms(roomsData?.rooms || []);
-      setDepartments(departmentsData?.departments || []);
-      setBookings(bookingsData?.bookings || []);
-      setAuthUser(currentUser);
-
-      if (currentUser) {
-        await refreshUsers(currentUser);
-      } else {
-        setUsers([]);
-      }
-    } catch (error) {
-      addToast(error.message || "Gagal memuat data aplikasi.", "error");
-    } finally {
-      setInitializing(false);
-    }
-  }, [addToast, refreshUsers]);
-
-  useEffect(() => {
-    bootstrapApp();
-  }, [bootstrapApp]);
-
-  // ── Auth handlers ──
-  const handleLogin = async ({ email, password }) => {
-    const data = await apiRequest("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-
-    const user = data?.user;
-    setAuthUser(user);
-    await refreshUsers(user);
-    setShowLogin(false);
-    setModal(null);
-    addToast(`✓ Selamat datang, ${user.name.split(" ")[0]}!`, "success");
-    return user;
-  };
-  const handleLogout = async () => {
-    try {
-      await apiRequest("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Keep local logout behavior even if the request fails.
-    }
-
-    setAuthUser(null);
-    setUsers([]);
-    // Redirect to a public view if currently on protected page
-    if (["mybookings", "rooms", "departments", "users"].includes(view)) setView("calendar");
-    addToast("Anda telah keluar.", "info");
-  };
-
-  // Guard: require login — shows prompt modal
-  const requireAuth = (action) => {
-    if (authUser) return action();
-    setModal({ type: "loginPrompt" });
-  };
-
-  // ── Booking handlers ──
-  const handleSaveBooking = async (booking) => {
-    try {
-      const organizer = users.find(u => u.name === booking.organizer);
-      const department = departments.find(d => d.name === booking.department);
-      const payload = {
-        roomId: booking.roomId,
-        title: booking.title,
-        date: booking.date,
-        startTime: booking.startTime,
-        endTime: booking.endTime,
-        attendees: booking.attendees,
-      };
-
-      if (authUser?.role === "admin" && organizer?.id) {
-        payload.organizerId = organizer.id;
-      }
-
-      if (authUser?.role === "admin" && department?.id) {
-        payload.departmentId = department.id;
-      }
-
-      const data = await apiRequest("/api/bookings", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      setBookings(b => [...b, data.booking]);
-      setModal(null);
-      addToast(`✓ Booking "${data.booking.title}" berhasil dibuat! Konfirmasi dikirim ke email.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal membuat booking.", "error");
-    }
-  };
-  const handleCancel = async (id) => {
-    const booking = bookings.find(x => x.id === id);
-
-    try {
-      const data = await apiRequest(`/api/bookings/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "cancelled" }),
-      });
-
-      setBookings(bks => bks.map(x => x.id === id ? data.booking : x));
-      setModal(null);
-      addToast(`Booking "${booking?.title}" telah dibatalkan.`, "error");
-    } catch (error) {
-      addToast(error.message || "Gagal membatalkan booking.", "error");
-    }
-  };
-  const handleCheckin = async (id) => {
-    const booking = bookings.find(x => x.id === id);
-
-    try {
-      const data = await apiRequest(`/api/bookings/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "checked_in" }),
-      });
-
-      setBookings(bks => bks.map(x => x.id === id ? data.booking : x));
-      addToast(`Check-in untuk "${booking?.title}" berhasil! Meeting dimulai.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal melakukan check-in.", "error");
-    }
-  };
-
-  // ── Room CRUD ──
-  const handleAddRoom = async (room) => {
-    try {
-      const data = await apiRequest("/api/rooms", {
-        method: "POST",
-        body: JSON.stringify(room),
-      });
-
-      setRooms(x => [...x, data.room]);
-      setModal(null);
-      addToast(`✓ Ruangan "${data.room.name}" ditambahkan.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal menambah ruangan.", "error");
-    }
-  };
-  const handleEditRoom = async (room) => {
-    try {
-      const data = await apiRequest(`/api/rooms/${room.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(room),
-      });
-
-      setRooms(x => x.map(i => i.id === room.id ? data.room : i));
-      setModal(null);
-      addToast(`Ruangan "${data.room.name}" diperbarui.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal memperbarui ruangan.", "error");
-    }
-  };
-  const handleDeleteRoom = async (room) => {
-    try {
-      const data = await apiRequest(`/api/rooms/${room.id}`, { method: "DELETE" });
-      const deletedIds = new Set(data.deletedBookingIds || []);
-
-      setRooms(x => x.filter(i => i.id !== room.id));
-      setBookings(b => b.filter(x => !deletedIds.has(x.id)));
-      setModal(null);
-      addToast(`Ruangan "${room.name}" dihapus.`, "error");
-    } catch (error) {
-      addToast(error.message || "Gagal menghapus ruangan.", "error");
-    }
-  };
-  const handleToggleRoom = async (id) => {
-    const room = rooms.find(x => x.id === id);
-
-    try {
-      const data = await apiRequest(`/api/rooms/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active: !room?.active }),
-      });
-
-      setRooms(x => x.map(i => i.id === id ? data.room : i));
-      addToast(`${room?.name} ${room?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
-    } catch (error) {
-      addToast(error.message || "Gagal mengubah status ruangan.", "error");
-    }
-  };
-
-  // ── Department CRUD ──
-  const handleAddDept = async (department) => {
-    try {
-      const head = users.find(user => user.name === department.head);
-      const data = await apiRequest("/api/departments", {
-        method: "POST",
-        body: JSON.stringify({
-          name: department.name,
-          color: department.color,
-          description: department.description,
-          active: department.active,
-          headId: head?.id || null,
-        }),
-      });
-
-      setDepartments(x => [...x, data.department]);
-      setModal(null);
-      addToast(`✓ Departemen "${data.department.name}" ditambahkan.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal menambah departemen.", "error");
-    }
-  };
-  const handleEditDept = async (department) => {
-    const previousDepartment = departments.find(item => item.id === department.id);
-
-    try {
-      const head = users.find(user => user.name === department.head);
-      const data = await apiRequest(`/api/departments/${department.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          name: department.name,
-          color: department.color,
-          description: department.description,
-          active: department.active,
-          headId: head?.id || null,
-        }),
-      });
-
-      setDepartments(x => x.map(item => item.id === department.id ? data.department : item));
-
-      if (previousDepartment?.name && previousDepartment.name !== data.department.name) {
-        setUsers(currentUsers => currentUsers.map(user => user.department === previousDepartment.name ? { ...user, department: data.department.name, departmentId: data.department.id } : user));
-        setBookings(currentBookings => currentBookings.map(booking => booking.department === previousDepartment.name ? { ...booking, department: data.department.name, departmentId: data.department.id } : booking));
-        setAuthUser(currentUser => currentUser?.department === previousDepartment.name ? { ...currentUser, department: data.department.name, departmentId: data.department.id } : currentUser);
-      }
-
-      setModal(null);
-      addToast(`Departemen "${data.department.name}" diperbarui.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal memperbarui departemen.", "error");
-    }
-  };
-  const handleDeleteDept = async (department) => {
-    try {
-      await apiRequest(`/api/departments/${department.id}`, { method: "DELETE" });
-      setDepartments(x => x.filter(item => item.id !== department.id));
-      setUsers(currentUsers => currentUsers.map(user => user.department === department.name ? { ...user, department: null, departmentId: null } : user));
-      setBookings(currentBookings => currentBookings.map(booking => booking.department === department.name ? { ...booking, department: null, departmentId: null } : booking));
-      setAuthUser(currentUser => currentUser?.department === department.name ? { ...currentUser, department: null, departmentId: null } : currentUser);
-      setModal(null);
-      addToast(`Departemen "${department.name}" dihapus.`, "error");
-    } catch (error) {
-      addToast(error.message || "Gagal menghapus departemen.", "error");
-    }
-  };
-  const handleToggleDept = async (id) => {
-    const department = departments.find(x => x.id === id);
-
-    try {
-      const data = await apiRequest(`/api/departments/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active: !department?.active }),
-      });
-
-      setDepartments(x => x.map(item => item.id === id ? data.department : item));
-      addToast(`${department?.name} ${department?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
-    } catch (error) {
-      addToast(error.message || "Gagal mengubah status departemen.", "error");
-    }
-  };
-
-  // ── User CRUD ──
-  const handleAddUser = async (user) => {
-    try {
-      const department = departments.find(item => item.name === user.department);
-      const payload = {
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        active: user.active,
-        avatarColor: user.avatarColor,
-        departmentId: department?.id || null,
-      };
-
-      if (user.password) {
-        payload.password = user.password;
-      }
-
-      const data = await apiRequest("/api/users", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      setUsers(x => [...x, data.user]);
-      setModal(null);
-      addToast(`✓ Pengguna "${data.user.name}" ditambahkan.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal menambah pengguna.", "error");
-    }
-  };
-  const handleEditUser = async (user) => {
-    const previousUser = users.find(item => item.id === user.id);
-
-    try {
-      const department = departments.find(item => item.name === user.department);
-      const payload = {
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        active: user.active,
-        avatarColor: user.avatarColor,
-        departmentId: department?.id || null,
-      };
-
-      if (user.password) {
-        payload.password = user.password;
-      }
-
-      const data = await apiRequest(`/api/users/${user.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-
-      setUsers(x => x.map(item => item.id === user.id ? data.user : item));
-
-      if (previousUser?.name && previousUser.name !== data.user.name) {
-        setBookings(currentBookings => currentBookings.map(booking => booking.organizer === previousUser.name ? { ...booking, organizer: data.user.name, organizerId: data.user.id } : booking));
-      }
-
-      setAuthUser(currentUser => currentUser?.id === data.user.id ? data.user : currentUser);
-      setModal(null);
-      addToast(`Pengguna "${data.user.name}" diperbarui.`, "success");
-    } catch (error) {
-      addToast(error.message || "Gagal memperbarui pengguna.", "error");
-    }
-  };
-  const handleDeleteUser = async (user) => {
-    try {
-      await apiRequest(`/api/users/${user.id}`, { method: "DELETE" });
-      setUsers(x => x.filter(item => item.id !== user.id));
-      setBookings(currentBookings => currentBookings.map(booking => booking.organizer === user.name ? { ...booking, organizer: null, organizerId: null } : booking));
-      setModal(null);
-      addToast(`Pengguna "${user.name}" dihapus.`, "error");
-    } catch (error) {
-      addToast(error.message || "Gagal menghapus pengguna.", "error");
-    }
-  };
-  const handleToggleUser = async (id) => {
-    const user = users.find(x => x.id === id);
-
-    try {
-      const data = await apiRequest(`/api/users/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active: !user?.active }),
-      });
-
-      setUsers(x => x.map(item => item.id === id ? data.user : item));
-      setAuthUser(currentUser => currentUser?.id === data.user.id ? data.user : currentUser);
-      addToast(`${user?.name} ${user?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
-    } catch (error) {
-      addToast(error.message || "Gagal mengubah status pengguna.", "error");
-    }
-  };
-
-  const activeRooms = rooms.filter(r => r.active);
-
-  // ── Public vs Protected routes ──
-  const PUBLIC_VIEWS = ["calendar", "availability", "analytics"];
-  const ADMIN_VIEWS = ["rooms", "departments", "users"];
-  const isPublic = PUBLIC_VIEWS.includes(view);
-  const isAdmin = authUser?.role === "admin";
-
-  const handleNavClick = (id) => {
-    const isProtected = !PUBLIC_VIEWS.includes(id);
-    if (isProtected && !authUser) {
-      setModal({ type: "loginPrompt" });
-      return;
-    }
-    if (ADMIN_VIEWS.includes(id) && !isAdmin) {
-      addToast("Halaman ini hanya untuk Admin.", "error");
-      return;
-    }
-    setView(id);
-  };
-
-  const navItems = [
-    { id: "calendar", label: "Kalender", icon: Calendar, group: "main", public: true },
-    { id: "availability", label: "Ketersediaan", icon: Layers, group: "main", public: true },
-    { id: "mybookings", label: "Booking Saya", icon: Star, group: "main", public: false },
-    { id: "analytics", label: "Analytics", icon: BarChart2, group: "main", public: true },
-    { id: "rooms", label: "Kelola Ruangan", icon: Building2, group: "admin", public: false },
-    { id: "departments", label: "Departemen", icon: Briefcase, group: "admin", public: false },
-    { id: "users", label: "Pengguna", icon: Users, group: "admin", public: false },
-  ];
-
-  const upcoming = bookings.filter(b => b.date === todayStr && b.status === "confirmed" &&
-    timeToMin(b.startTime) > new Date().getHours() * 60 + new Date().getMinutes()
-  ).length;
+  const { state, actions } = useMeetingAppController();
+  const {
+    view,
+    rooms,
+    departments,
+    users,
+    bookings,
+    modal,
+    toasts,
+    initializing,
+    authUser,
+    showLogin,
+    layout,
+    theme,
+    activeRooms,
+    navItems,
+    upcoming,
+  } = state;
+  const {
+    setModal,
+    setShowLogin,
+    setLayout,
+    toggleTheme,
+    removeToast,
+    handleLogin,
+    handleLogout,
+    handleNavClick,
+    requireAuth,
+    handleCancel,
+    handleToggleRoom,
+    handleToggleDept,
+    handleToggleUser,
+    handleAddRoom,
+    handleEditRoom,
+    handleDeleteRoom,
+    handleAddDept,
+    handleEditDept,
+    handleDeleteDept,
+    handleAddUser,
+    handleEditUser,
+    handleDeleteUser,
+    handleSaveBooking,
+    handleCheckin,
+  } = actions;
 
   if (initializing) {
     return (
-      <div style={{ minHeight: "100vh", background: "#080b11", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontFamily: "'DM Sans', sans-serif" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "18px 22px" }}>
-          <RefreshCw size={18} style={{ animation: "spin 1s linear infinite" }} />
-          Memuat data MeetSpace...
-        </div>
-      </div>
-    );
-  }
-
-  // Show full login page
-  if (showLogin) {
-    return (
       <>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
-        <LoginPage onLogin={handleLogin} />
-        {/* Back to guest view */}
-        <button onClick={() => setShowLogin(false)} style={{ position: "fixed", top: 20, left: 20, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 6, zIndex: 9999 }}>
-          <ChevronLeft size={14} /> Lihat tanpa login
-        </button>
+        <style>{APP_THEME_STYLE}</style>
+        <LoadingScreen />
       </>
     );
   }
 
-  const roleBadgeColor = { admin: "#f59e0b", member: "#6366f1", viewer: "#6b7280" };
+  if (showLogin) {
+    return (
+      <div data-meetspace-theme={theme}>
+        <style>{APP_THEME_STYLE}</style>
+        <LoginPage onLogin={handleLogin} />
+        <button onClick={() => setShowLogin(false)} style={{ position: "fixed", top: 20, left: 20, background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 6, zIndex: 9999 }}>
+          <ChevronLeft size={14} /> Lihat tanpa login
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <LayoutWrapper layout={layout}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
-        * { box-sizing:border-box; margin:0; padding:0; }
-        ::-webkit-scrollbar { width:6px; height:6px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#2d3141; border-radius:3px; }
-        select option { background:#1a1d27; }
-        textarea { font-family:'DM Sans',sans-serif; }
-        @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
-        @keyframes scan { from{transform:translateY(0)} to{transform:translateY(160px)} }
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-      `}</style>
-
-      {/* ── Sidebar ── */}
-      <div style={{ width: 230, background: "#0c0e16", borderRight: "1px solid #1a1d27", display: "flex", flexDirection: "column", flexShrink: 0, padding: "24px 0", overflowY: "auto", height: "100%" }}>
-        {/* Logo */}
-        <div style={{ padding: "0 20px 24px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Building2 size={20} color="#fff" />
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: -0.3, color: "#ffffff" }}>MeetSpace</div>
-              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#ffffff" }}>Room Booking</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Guest banner */}
-        {!authUser && (
-          <div style={{ margin: "0 12px 16px", background: "#1a1d27", border: "1px solid #6366f133", borderRadius: 12, padding: "12px" }}>
-            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, lineHeight: 1.5 }}>Anda browsing sebagai tamu. Login untuk fitur penuh.</div>
-            <button onClick={() => setShowLogin(true)} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: "#fff", borderRadius: 8, padding: "9px", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <LogIn size={14} /> Masuk
-            </button>
-          </div>
-        )}
-
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "0 12px" }}>
-          <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "0 4px 8px", fontWeight: 600 }}>Menu</div>
-          {navItems.filter(n => n.group === "main").map(({ id, label, icon: Icon, public: isPub }) => {
-            const locked = !isPub && !authUser;
-            const active = view === id;
-            return (
-              <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : locked ? "#4b5563" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
-                <Icon size={17} color={active ? "#6366f1" : locked ? "#374151" : "#6b7280"} />
-                {label}
-                {isPub && <span style={{ marginLeft: "auto", fontSize: 9, color: "#374151", background: "#1a1d27", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase", letterSpacing: 0.5 }}>Publik</span>}
-                {id === "mybookings" && upcoming > 0 && authUser && <span style={{ marginLeft: "auto", background: "#6366f1", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{upcoming}</span>}
-                {locked && <Lock size={11} style={{ marginLeft: "auto" }} color="#374151" />}
-              </button>
-            );
-          })}
-
-          {/* Admin section — only shown to admin users */}
-          {authUser?.role === "admin" && (
-            <>
-              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "14px 4px 8px", fontWeight: 600 }}>Admin</div>
-              {navItems.filter(n => n.group === "admin").map(({ id, label, icon: Icon }) => {
-                const count = id === "rooms" ? rooms.length : id === "departments" ? departments.length : users.length;
-                const active = view === id;
-                return (
-                  <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
-                    <Icon size={17} color={active ? "#6366f1" : "#6b7280"} />
-                    {label}
-                    <span style={{ marginLeft: "auto", background: "#1f2937", color: "#6b7280", borderRadius: 10, padding: "1px 7px", fontSize: 11 }}>{count}</span>
-                  </button>
-                );
-              })}
-            </>
-          )}
-        </nav>
-
-        {/* Booking CTA */}
-        <div style={{ padding: "0 12px 10px" }}>
-          <button onClick={() => requireAuth(() => setModal({ type: "booking" }))} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: "#fff", borderRadius: 12, padding: "12px", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Plus size={16} /> Booking Baru
-            {!authUser && <Lock size={12} style={{ opacity: .7 }} />}
-          </button>
-        </div>
-
-        {/* Layout toggle */}
-        <div style={{ padding: "0 12px 10px" }}>
-          <div style={{ background: "#111320", border: "1px solid #1f2937", borderRadius: 12, padding: "10px 12px" }}>
-            <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: "#4b5563", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8, fontWeight: 600 }}>Layout</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[["boxed", "Boxed", LayoutPanelLeft], ["fluid", "Fluid", Maximize2]].map(([val, lbl, Icon]) => (
-                <button key={val} onClick={() => setLayout(val)} style={{ flex: 1, background: layout === val ? "#6366f122" : "transparent", border: `1px solid ${layout === val ? "#6366f1" : "#1f2937"}`, borderRadius: 8, padding: "7px 6px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s" }}>
-                  <Icon size={14} color={layout === val ? "#6366f1" : "#4b5563"} />
-                  <span style={{ fontSize: 10, color: layout === val ? "#6366f1" : "#4b5563", fontFamily: "'Space Grotesk',sans-serif", fontWeight: layout === val ? 700 : 400 }}>{lbl}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* User info / login area */}
-        <div style={{ padding: "10px 16px 0", borderTop: "1px solid #1a1d27" }}>
-          {authUser ? (
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: authUser.avatarColor || "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                  {authUser.name.split(" ").map(x => x[0]).join("").slice(0, 2)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{authUser.name.split(" ")[0]}</div>
-                  <span style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, background: roleBadgeColor[authUser.role] + "22", color: "#fff", borderRadius: 10, padding: "1px 7px", fontWeight: 700 }}>{authUser.role}</span>
-                </div>
-                <button onClick={handleLogout} title="Logout" style={{ background: "#1f0000", border: "1px solid #ef444422", borderRadius: 8, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexShrink: 0 }}>
-                  <LogOut size={13} />
-                </button>
-              </div>
-              <div style={{ fontSize: 11, color: "#374151", paddingBottom: 4 }}>{authUser.email}</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 4 }}>
-              <UserCircle2 size={22} color="#374151" />
-              <span style={{ fontSize: 12, color: "#4b5563" }}>Tamu — Tidak login</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Main Content ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px", background: "#080b11", height: "100%", color: "#f9fafb", fontFamily: "'DM Sans',sans-serif" }}>
-        {view === "calendar" && (
-          <CalendarView bookings={bookings} rooms={activeRooms}
-            onNewBooking={(room, date) => requireAuth(() => setModal({ type: "booking", preRoom: room, preDate: date }))}
-            onBookingClick={b => setModal({ type: "detail", booking: b })}
-          />
-        )}
-        {view === "availability" && (
-          <AvailabilityView rooms={activeRooms} bookings={bookings}
-            onNewBooking={(room, date) => requireAuth(() => setModal({ type: "booking", preRoom: room, preDate: date }))}
-          />
-        )}
-        {view === "mybookings" && authUser && (
-          <MyBookingsView bookings={bookings} rooms={rooms} currentUser={authUser.name}
-            onBookingClick={b => setModal({ type: "detail", booking: b })}
-            onCancel={handleCancel}
-          />
-        )}
-        {view === "analytics" && <AnalyticsView bookings={bookings} rooms={rooms} departments={departments} />}
-        {view === "rooms" && authUser?.role === "admin" && (
-          <RoomsView rooms={rooms} bookings={bookings}
-            onAdd={() => setModal({ type: "roomAdd" })}
-            onEdit={room => setModal({ type: "roomEdit", room })}
-            onDelete={room => setModal({ type: "roomDelete", room })}
-            onToggleActive={handleToggleRoom}
-          />
-        )}
-        {view === "departments" && authUser?.role === "admin" && (
-          <DepartmentsView departments={departments} users={users} bookings={bookings}
-            onAdd={() => setModal({ type: "deptAdd" })}
-            onEdit={dept => setModal({ type: "deptEdit", dept })}
-            onDelete={dept => setModal({ type: "deptDelete", dept })}
-            onToggleActive={handleToggleDept}
-          />
-        )}
-        {view === "users" && authUser?.role === "admin" && (
-          <UsersView users={users} departments={departments} bookings={bookings}
-            onAdd={() => setModal({ type: "userAdd" })}
-            onEdit={user => setModal({ type: "userEdit", user })}
-            onDelete={user => setModal({ type: "userDelete", user })}
-            onToggleActive={handleToggleUser}
-          />
-        )}
-      </div>
-
-      {/* ── Modals ── */}
-      {modal?.type === "loginPrompt" && (
-        <LoginPromptModal
-          onGoLogin={() => { setModal(null); setShowLogin(true); }}
-          onClose={() => setModal(null)}
+    <>
+      <style>{APP_THEME_STYLE}</style>
+      <LayoutWrapper layout={layout} theme={theme}>
+        <AppSidebar
+          authUser={authUser}
+          view={view}
+          navItems={navItems}
+          rooms={rooms}
+          departments={departments}
+          users={users}
+          upcoming={upcoming}
+          layout={layout}
+          theme={theme}
+          onNavClick={handleNavClick}
+          onSetLayout={setLayout}
+          onToggleTheme={toggleTheme}
+          onOpenLogin={() => setShowLogin(true)}
+          onOpenBooking={() => requireAuth(() => setModal({ type: "booking" }))}
+          onLogout={handleLogout}
         />
-      )}
-      {modal?.type === "booking" && authUser && (
-        <BookingModal rooms={activeRooms} bookings={bookings} users={users} departments={departments}
-          preRoom={modal.preRoom} preDate={modal.preDate}
-          onSave={handleSaveBooking} onClose={() => setModal(null)}
-        />
-      )}
-      {modal?.type === "detail" && (() => {
-        const b = modal.booking;
-        const room = rooms.find(r => r.id === b.roomId);
-        return <DetailModal booking={bookings.find(x => x.id === b.id) || b} room={room}
-          onCancel={authUser ? handleCancel : null}
-          onCheckin={authUser ? handleCheckin : null}
-          onClose={() => setModal(null)}
-        />;
-      })()}
-      {modal?.type === "roomAdd" && <RoomFormModal onSave={handleAddRoom} onClose={() => setModal(null)} />}
-      {modal?.type === "roomEdit" && <RoomFormModal room={modal.room} onSave={handleEditRoom} onClose={() => setModal(null)} />}
-      {modal?.type === "roomDelete" && (() => {
-        const room = modal.room;
-        const cnt = bookings.filter(b => b.roomId === room.id && ["confirmed", "checked_in"].includes(b.status)).length;
-        return <DeleteConfirmModal room={room} bookingCount={cnt} onConfirm={() => handleDeleteRoom(room)} onClose={() => setModal(null)} />;
-      })()}
-      {modal?.type === "deptAdd" && <DeptFormModal users={users} onSave={handleAddDept} onClose={() => setModal(null)} />}
-      {modal?.type === "deptEdit" && <DeptFormModal dept={modal.dept} users={users} onSave={handleEditDept} onClose={() => setModal(null)} />}
-      {modal?.type === "deptDelete" && (() => {
-        const dept = modal.dept;
-        const memberCount = users.filter(u => u.department === dept.name).length;
-        return <GenericDeleteModal title="Hapus Departemen?" subtitle={`Anda akan menghapus <strong>${dept.name}</strong> secara permanen.`} warning={memberCount > 0 ? `<strong style="color:#f59e0b">${memberCount} pengguna</strong> di departemen ini tidak akan terpengaruh.` : null} onConfirm={() => handleDeleteDept(dept)} onClose={() => setModal(null)} />;
-      })()}
-      {modal?.type === "userAdd" && <UserFormModal departments={departments} onSave={handleAddUser} onClose={() => setModal(null)} />}
-      {modal?.type === "userEdit" && <UserFormModal user={modal.user} departments={departments} onSave={handleEditUser} onClose={() => setModal(null)} />}
-      {modal?.type === "userDelete" && (() => {
-        const user = modal.user;
-        const bkgCount = bookings.filter(b => b.organizer === user.name && ["confirmed", "checked_in"].includes(b.status)).length;
-        return <GenericDeleteModal title="Hapus Pengguna?" subtitle={`Anda akan menghapus akun <strong>${user.name}</strong> secara permanen.`} warning={bkgCount > 0 ? `<strong style="color:#f59e0b">${bkgCount} booking aktif</strong> milik pengguna ini tidak otomatis dibatalkan.` : null} onConfirm={() => handleDeleteUser(user)} onClose={() => setModal(null)} />;
-      })()}
 
-      <Toast toasts={toasts} remove={removeToast} />
-    </LayoutWrapper>
+        <MeetingAppContent
+          view={view}
+          authUser={authUser}
+          rooms={rooms}
+          activeRooms={activeRooms}
+          departments={departments}
+          users={users}
+          bookings={bookings}
+          views={{
+            CalendarView,
+            AvailabilityView,
+            MyBookingsView,
+            AnalyticsView,
+            RoomsView,
+            DepartmentsView,
+            UsersView,
+          }}
+          onRequireBooking={(room, date) => requireAuth(() => setModal({ type: "booking", preRoom: room, preDate: date }))}
+          onBookingClick={(booking) => setModal({ type: "detail", booking })}
+          onCancel={handleCancel}
+          onRoomAdd={() => setModal({ type: "roomAdd" })}
+          onRoomEdit={(room) => setModal({ type: "roomEdit", room })}
+          onRoomDelete={(room) => setModal({ type: "roomDelete", room })}
+          onToggleRoom={handleToggleRoom}
+          onDeptAdd={() => setModal({ type: "deptAdd" })}
+          onDeptEdit={(dept) => setModal({ type: "deptEdit", dept })}
+          onDeptDelete={(dept) => setModal({ type: "deptDelete", dept })}
+          onToggleDept={handleToggleDept}
+          onUserAdd={() => setModal({ type: "userAdd" })}
+          onUserEdit={(user) => setModal({ type: "userEdit", user })}
+          onUserDelete={(user) => setModal({ type: "userDelete", user })}
+          onToggleUser={handleToggleUser}
+        />
+
+        <MeetingAppModals
+          modal={modal}
+          authUser={authUser}
+          rooms={rooms}
+          activeRooms={activeRooms}
+          departments={departments}
+          users={users}
+          bookings={bookings}
+          components={{
+            LoginPromptModal,
+            BookingModal,
+            DetailModal,
+            RoomFormModal,
+            DeleteConfirmModal,
+            DeptFormModal,
+            GenericDeleteModal,
+            UserFormModal,
+          }}
+          actions={{
+            setModal,
+            setShowLogin,
+            handleSaveBooking,
+            handleCancel,
+            handleCheckin,
+            handleAddRoom,
+            handleEditRoom,
+            handleDeleteRoom,
+            handleAddDept,
+            handleEditDept,
+            handleDeleteDept,
+            handleAddUser,
+            handleEditUser,
+            handleDeleteUser,
+          }}
+        />
+
+        <Toast toasts={toasts} remove={removeToast} />
+      </LayoutWrapper>
+    </>
   );
 }
