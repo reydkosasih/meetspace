@@ -12,75 +12,8 @@ import {
   Lock, EyeOff, KeyRound, LayoutPanelLeft, Maximize2, LogIn, UserCircle2, ShieldAlert
 } from "lucide-react";
 
-// ─── SEED DATA ────────────────────────────────────────────────────────────────
-const INITIAL_ROOMS = [
-  { id: 1, name: "Boardroom Alpha", capacity: 20, floor: "5F", color: "#f59e0b", amenities: ["projector", "video", "whiteboard", "coffee"], description: "Executive boardroom with panoramic city view", active: true },
-  { id: 2, name: "Studio Beta", capacity: 8, floor: "4F", color: "#10b981", amenities: ["tv", "whiteboard", "wifi"], description: "Creative studio with writable walls", active: true },
-  { id: 3, name: "Hub Gamma", capacity: 12, floor: "4F", color: "#6366f1", amenities: ["projector", "video", "wifi"], description: "Mid-size collaboration hub", active: true },
-  { id: 4, name: "Pod Delta", capacity: 4, floor: "3F", color: "#ec4899", amenities: ["tv", "wifi"], description: "Compact focus pod", active: true },
-  { id: 5, name: "Arena Epsilon", capacity: 30, floor: "6F", color: "#f97316", amenities: ["projector", "video", "mic", "coffee", "whiteboard"], description: "Large training & event space", active: true },
-  { id: 6, name: "Lab Zeta", capacity: 6, floor: "3F", color: "#14b8a6", amenities: ["tv", "wifi", "whiteboard"], description: "Tech lab with dual screens", active: true },
-];
-
-const INITIAL_DEPARTMENTS = [
-  { id: 1, name: "Engineering", color: "#6366f1", description: "Software development & infrastructure", head: "Budi Santoso", active: true },
-  { id: 2, name: "Product", color: "#10b981", description: "Product strategy & roadmap", head: "Sari Dewi", active: true },
-  { id: 3, name: "Marketing", color: "#f59e0b", description: "Brand, campaigns & growth", head: "Ahmad Rizky", active: true },
-  { id: 4, name: "HR", color: "#ec4899", description: "People operations & culture", head: "Maya Putri", active: true },
-  { id: 5, name: "Finance", color: "#14b8a6", description: "Finance, budgeting & compliance", head: "Reza Pratama", active: true },
-  { id: 6, name: "Operations", color: "#f97316", description: "Business ops & logistics", head: "Lina Suharto", active: true },
-  { id: 7, name: "Legal", color: "#8b5cf6", description: "Legal affairs & contracts", head: "Doni Kusuma", active: true },
-  { id: 8, name: "Design", color: "#06b6d4", description: "UI/UX & visual communication", head: "Fitri Handayani", active: true },
-];
-
-const INITIAL_USERS = [
-  { id: 1, name: "Budi Santoso", email: "budi@company.com", password: "admin123", phone: "+62 812-0001-0001", department: "Engineering", role: "admin", active: true, avatarColor: "#6366f1" },
-  { id: 2, name: "Sari Dewi", email: "sari@company.com", password: "admin123", phone: "+62 812-0001-0002", department: "Product", role: "admin", active: true, avatarColor: "#10b981" },
-  { id: 3, name: "Ahmad Rizky", email: "ahmad@company.com", password: "member123", phone: "+62 812-0001-0003", department: "Marketing", role: "member", active: true, avatarColor: "#f59e0b" },
-  { id: 4, name: "Maya Putri", email: "maya@company.com", password: "member123", phone: "+62 812-0001-0004", department: "HR", role: "member", active: true, avatarColor: "#ec4899" },
-  { id: 5, name: "Reza Pratama", email: "reza@company.com", password: "member123", phone: "+62 812-0001-0005", department: "Finance", role: "member", active: true, avatarColor: "#14b8a6" },
-  { id: 6, name: "Lina Suharto", email: "lina@company.com", password: "member123", phone: "+62 812-0001-0006", department: "Operations", role: "member", active: true, avatarColor: "#f97316" },
-  { id: 7, name: "Doni Kusuma", email: "doni@company.com", password: "viewer123", phone: "+62 812-0001-0007", department: "Legal", role: "viewer", active: true, avatarColor: "#8b5cf6" },
-  { id: 8, name: "Fitri Handayani", email: "fitri@company.com", password: "member123", phone: "+62 812-0001-0008", department: "Design", role: "member", active: false, avatarColor: "#06b6d4" },
-];
-
 const today = new Date();
 const todayStr = today.toISOString().split("T")[0];
-
-function genBookings() {
-  const bookings = [];
-  let id = 1;
-  const offsets = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7];
-  offsets.forEach(offset => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + offset);
-    const dateStr = d.toISOString().split("T")[0];
-    const numBookings = Math.floor(Math.random() * 4) + 2;
-    for (let i = 0; i < numBookings; i++) {
-      const roomId = INITIAL_ROOMS[Math.floor(Math.random() * INITIAL_ROOMS.length)].id;
-      const startHour = 8 + Math.floor(Math.random() * 8);
-      const dur = [1, 1.5, 2][Math.floor(Math.random() * 3)];
-      const endHour = startHour + dur;
-      const status = offset < 0 ? "completed" : (offset === 0 && startHour < today.getHours() ? (Math.random() > 0.3 ? "checked_in" : "no_show") : "confirmed");
-      bookings.push({
-        id: id++,
-        roomId,
-        title: ["Weekly Sync", "Sprint Review", "Product Demo", "Design Review", "Strategy Meeting", "1:1", "All Hands", "Client Call", "Budget Review"][Math.floor(Math.random() * 9)],
-        date: dateStr,
-        startTime: `${String(startHour).padStart(2, "0")}:00`,
-        endTime: `${String(Math.floor(endHour)).padStart(2, "0")}:${endHour % 1 === 0.5 ? "30" : "00"}`,
-        organizer: INITIAL_USERS[Math.floor(Math.random() * INITIAL_USERS.length)].name,
-        department: INITIAL_DEPARTMENTS[Math.floor(Math.random() * INITIAL_DEPARTMENTS.length)].name,
-        attendees: Math.floor(Math.random() * 12) + 2,
-        status,
-        checkinCode: `MR${String(id).padStart(4, "0")}`,
-      });
-    }
-  });
-  return bookings;
-}
-
-const INITIAL_BOOKINGS = genBookings();
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const timeToMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
@@ -124,6 +57,25 @@ const STATUS_CFG = {
   cancelled: { label: "Cancelled", color: "#ef4444", bg: "#1f0000" },
   no_show: { label: "No Show", color: "#f97316", bg: "#1c0a00" },
 };
+
+async function apiRequest(url, options = {}) {
+  const requestOptions = {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {}),
+    },
+  };
+
+  const response = await fetch(url, requestOptions);
+  const payload = response.status === 204 ? null : await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Request failed.");
+  }
+
+  return payload;
+}
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function Toast({ toasts, remove }) {
@@ -226,8 +178,9 @@ function QRModal({ booking, room, onCheckin, onClose }) {
 function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, onSave, onClose }) {
   const activeUsers = users.filter(u => u.active);
   const activeDepts = departments.filter(d => d.active);
+  const hasBookingPrereqs = rooms.length > 0 && activeUsers.length > 0 && activeDepts.length > 0;
   const [form, setForm] = useState({
-    roomId: preRoom?.id || rooms[0]?.id,
+    roomId: preRoom?.id || rooms[0]?.id || "",
     title: "",
     date: preDate || todayStr,
     startTime: "09:00",
@@ -237,10 +190,20 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
     attendees: 5,
   });
   const [error, setError] = useState("");
-  const room = rooms.find(r => r.id === Number(form.roomId));
+  const room = rooms.find(r => r.id === Number(form.roomId)) || null;
   const bufferEnd = minToTime(timeToMin(form.endTime) + BUFFER);
 
+  useEffect(() => {
+    setForm(currentForm => ({
+      ...currentForm,
+      roomId: currentForm.roomId || preRoom?.id || rooms[0]?.id || "",
+      organizer: currentForm.organizer || activeUsers[0]?.name || "",
+      department: currentForm.department || activeDepts[0]?.name || "",
+    }));
+  }, [preRoom, rooms, activeUsers, activeDepts]);
+
   const submit = () => {
+    if (!hasBookingPrereqs || !room) return setError("Booking belum bisa dibuat. Pastikan ada room, user aktif, dan departemen aktif.");
     if (!form.title.trim()) return setError("Judul meeting wajib diisi.");
     if (timeToMin(form.startTime) >= timeToMin(form.endTime)) return setError("Waktu selesai harus setelah waktu mulai.");
     if (form.attendees > room.capacity) return setError(`Kapasitas ${room.name} hanya ${room.capacity} orang.`);
@@ -273,6 +236,12 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
           <X size={16} />
         </button>
       </div>
+
+      {!hasBookingPrereqs && (
+        <div style={{ marginBottom: 16, background: "#1c1200", border: "1px solid #f59e0b44", borderRadius: 10, padding: "12px 16px", color: "#f59e0b", display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+          <AlertCircle size={16} /> Booking memerlukan minimal satu room aktif, satu user aktif, dan satu departemen aktif.
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {/* Title */}
@@ -307,8 +276,8 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
 
         {/* Attendees */}
         <div>
-          <label style={labelStyle}>Jumlah Peserta (maks. {room.capacity})</label>
-          <input type="number" style={inputStyle} value={form.attendees} min={1} max={room.capacity} onChange={e => inp("attendees", e.target.value)} />
+          <label style={labelStyle}>Jumlah Peserta (maks. {room?.capacity || 0})</label>
+          <input type="number" style={inputStyle} value={form.attendees} min={1} max={room?.capacity || 1} onChange={e => inp("attendees", e.target.value)} />
         </div>
 
         {/* Time */}
@@ -317,7 +286,7 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
           <input type="time" style={inputStyle} value={form.startTime} onChange={e => inp("startTime", e.target.value)} />
         </div>
         <div>
-          <label style={labelStyle}>Jam Selesai <span style={{ color: room.color }}>+buffer {BUFFER}m → {bufferEnd}</span></label>
+          <label style={labelStyle}>Jam Selesai <span style={{ color: room?.color || "#9ca3af" }}>+buffer {BUFFER}m → {bufferEnd}</span></label>
           <input type="time" style={inputStyle} value={form.endTime} onChange={e => inp("endTime", e.target.value)} />
         </div>
 
@@ -346,7 +315,7 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
 
       <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
         <button onClick={onClose} style={{ flex: 1, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>Batal</button>
-        <button onClick={submit} style={{ flex: 2, background: room.color, border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>Konfirmasi Booking →</button>
+        <button onClick={submit} disabled={!hasBookingPrereqs || !room} style={{ flex: 2, background: room?.color || "#374151", border: "none", color: "#000", borderRadius: 10, padding: "13px", cursor: !hasBookingPrereqs || !room ? "not-allowed" : "pointer", opacity: !hasBookingPrereqs || !room ? 0.6 : 1, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>Konfirmasi Booking →</button>
       </div>
     </Modal>
   );
@@ -911,7 +880,7 @@ function MyBookingsView({ bookings, rooms, currentUser, onBookingClick, onCancel
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Booking Saya</h2>
+      <h2 style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Booking Saya</h2>
       {myBookings.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
           <Calendar size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
@@ -1625,6 +1594,7 @@ function UserFormModal({ user, departments, onSave, onClose }) {
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    password: "",
     department: user?.department || activeDepts[0]?.name || "",
     role: user?.role || "member",
     avatarColor: user?.avatarColor || "#6366f1",
@@ -1636,6 +1606,7 @@ function UserFormModal({ user, departments, onSave, onClose }) {
   const submit = () => {
     if (!form.name.trim()) return setError("Nama wajib diisi.");
     if (!form.email.trim() || !form.email.includes("@")) return setError("Format email tidak valid.");
+    if (!isEdit && !form.password.trim()) return setError("Password wajib diisi untuk pengguna baru.");
     setError("");
     onSave({ ...form, id: user?.id || Date.now() });
   };
@@ -1678,6 +1649,13 @@ function UserFormModal({ user, departments, onSave, onClose }) {
           <div style={{ position: "relative" }}>
             <Phone size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
             <input style={{ ...inputStyle, paddingLeft: 34 }} placeholder="+62 812-xxxx-xxxx" value={form.phone} onChange={e => inp("phone", e.target.value)} />
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Password {!isEdit ? "*" : "(opsional)"}</label>
+          <div style={{ position: "relative" }}>
+            <KeyRound size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#6b7280" }} />
+            <input type="password" style={{ ...inputStyle, paddingLeft: 34 }} placeholder={isEdit ? "Kosongkan jika tidak diubah" : "Masukkan password awal"} value={form.password} onChange={e => inp("password", e.target.value)} />
           </div>
         </div>
         {/* Department */}
@@ -1898,14 +1876,7 @@ function UsersView({ users, departments, bookings, onAdd, onEdit, onDelete, onTo
   );
 }
 
-// ─── AUTH: LOGIN PAGE ─────────────────────────────────────────────────────────
-const DEMO_ACCOUNTS = [
-  { label: "Admin", email: "budi@company.com", password: "admin123", color: "#f59e0b" },
-  { label: "Member", email: "ahmad@company.com", password: "member123", color: "#6366f1" },
-  { label: "Viewer", email: "doni@company.com", password: "viewer123", color: "#6b7280" },
-];
-
-function LoginPage({ users, onLogin }) {
+function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -1925,39 +1896,28 @@ function LoginPage({ users, onLogin }) {
     if (locked && lockTimer === 0) setLocked(false);
   }, [locked, lockTimer]);
 
-  const handleLogin = () => {
-    if (locked) return;
+  const handleLogin = async () => {
+    if (locked || loading) return;
     if (!email.trim() || !password.trim()) return setError("Email dan password wajib diisi.");
     setLoading(true);
     setError("");
-    // Simulate network latency
-    setTimeout(() => {
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-      if (!user) {
-        const next = attempts + 1;
-        setAttempts(next);
-        if (next >= 5) {
-          setLocked(true);
-          setLockTimer(30);
-          setError("Terlalu banyak percobaan. Akun dikunci 30 detik.");
-        } else {
-          setError(`Email atau password salah. (${next}/5 percobaan)`);
-        }
-        setLoading(false);
-        return;
-      }
-      if (!user.active) {
-        setError("Akun Anda telah dinonaktifkan. Hubungi administrator.");
-        setLoading(false);
-        return;
-      }
+    try {
+      await onLogin({ email, password, remember });
       setAttempts(0);
-      onLogin(user, remember);
+    } catch (loginError) {
+      const next = attempts + 1;
+      setAttempts(next);
+      if (next >= 5) {
+        setLocked(true);
+        setLockTimer(30);
+        setError("Terlalu banyak percobaan. Akun dikunci 30 detik.");
+      } else {
+        setError(`${loginError.message || "Email atau password salah."} (${next}/5 percobaan)`);
+      }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
-
-  const quickFill = (acc) => { setEmail(acc.email); setPassword(acc.password); setError(""); };
 
   const inpStyle = (hasErr) => ({
     width: "100%", boxSizing: "border-box", background: "#0f1117",
@@ -1984,20 +1944,7 @@ function LoginPage({ users, onLogin }) {
 
         {/* Card */}
         <div style={{ background: "#0f1117", border: "1px solid #1f2937", borderRadius: 20, padding: "32px", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>
-          {/* Demo accounts */}
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, fontWeight: 600 }}>Demo Akun Cepat</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              {DEMO_ACCOUNTS.map(acc => (
-                <button key={acc.label} onClick={() => quickFill(acc)} style={{ flex: 1, background: acc.color + "15", border: `1px solid ${acc.color}44`, borderRadius: 10, padding: "8px 6px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", transition: "all .15s" }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: acc.color }}>{acc.label}</div>
-                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{acc.email.split("@")[0]}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ borderTop: "1px solid #1f2937", paddingTop: 24 }}>
+          <div>
             {/* Email */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.8, display: "block", marginBottom: 8, fontWeight: 600 }}>Email</label>
@@ -2110,14 +2057,15 @@ function LayoutWrapper({ layout, children }) {
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-export default function App() {
+export default function MeetingApp() {
   const [view, setView] = useState("calendar");
-  const [rooms, setRooms] = useState(INITIAL_ROOMS);
-  const [departments, setDepartments] = useState(INITIAL_DEPARTMENTS);
-  const [users, setUsers] = useState(INITIAL_USERS);
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
+  const [rooms, setRooms] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [modal, setModal] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [initializing, setInitializing] = useState(true);
 
   // ── Auth ──
   const [authUser, setAuthUser] = useState(null);  // null = guest
@@ -2133,15 +2081,75 @@ export default function App() {
   }, []);
   const removeToast = useCallback((id) => setToasts(t => t.filter(x => x.id !== id)), []);
 
+  const refreshUsers = useCallback(async (currentUser) => {
+    if (!currentUser) {
+      setUsers([]);
+      return [];
+    }
+
+    const data = await apiRequest("/api/users");
+    const nextUsers = data?.users || [];
+    setUsers(nextUsers);
+    return nextUsers;
+  }, []);
+
+  const bootstrapApp = useCallback(async () => {
+    setInitializing(true);
+
+    try {
+      const [roomsData, departmentsData, bookingsData, sessionData] = await Promise.all([
+        apiRequest("/api/rooms"),
+        apiRequest("/api/departments"),
+        apiRequest("/api/bookings"),
+        apiRequest("/api/auth/me"),
+      ]);
+
+      const currentUser = sessionData?.user || null;
+      setRooms(roomsData?.rooms || []);
+      setDepartments(departmentsData?.departments || []);
+      setBookings(bookingsData?.bookings || []);
+      setAuthUser(currentUser);
+
+      if (currentUser) {
+        await refreshUsers(currentUser);
+      } else {
+        setUsers([]);
+      }
+    } catch (error) {
+      addToast(error.message || "Gagal memuat data aplikasi.", "error");
+    } finally {
+      setInitializing(false);
+    }
+  }, [addToast, refreshUsers]);
+
+  useEffect(() => {
+    bootstrapApp();
+  }, [bootstrapApp]);
+
   // ── Auth handlers ──
-  const handleLogin = (user) => {
+  const handleLogin = async ({ email, password }) => {
+    const data = await apiRequest("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    const user = data?.user;
     setAuthUser(user);
+    await refreshUsers(user);
     setShowLogin(false);
     setModal(null);
     addToast(`✓ Selamat datang, ${user.name.split(" ")[0]}!`, "success");
+    return user;
   };
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiRequest("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Keep local logout behavior even if the request fails.
+    }
+
     setAuthUser(null);
+    setUsers([]);
     // Redirect to a public view if currently on protected page
     if (["mybookings", "rooms", "departments", "users"].includes(view)) setView("calendar");
     addToast("Anda telah keluar.", "info");
@@ -2154,40 +2162,304 @@ export default function App() {
   };
 
   // ── Booking handlers ──
-  const handleSaveBooking = (booking) => {
-    setBookings(b => [...b, booking]);
-    setModal(null);
-    addToast(`✓ Booking "${booking.title}" berhasil dibuat! Konfirmasi dikirim ke email.`, "success");
+  const handleSaveBooking = async (booking) => {
+    try {
+      const organizer = users.find(u => u.name === booking.organizer);
+      const department = departments.find(d => d.name === booking.department);
+      const payload = {
+        roomId: booking.roomId,
+        title: booking.title,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        attendees: booking.attendees,
+      };
+
+      if (authUser?.role === "admin" && organizer?.id) {
+        payload.organizerId = organizer.id;
+      }
+
+      if (authUser?.role === "admin" && department?.id) {
+        payload.departmentId = department.id;
+      }
+
+      const data = await apiRequest("/api/bookings", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setBookings(b => [...b, data.booking]);
+      setModal(null);
+      addToast(`✓ Booking "${data.booking.title}" berhasil dibuat! Konfirmasi dikirim ke email.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal membuat booking.", "error");
+    }
   };
-  const handleCancel = (id) => {
-    const b = bookings.find(x => x.id === id);
-    setBookings(bks => bks.map(x => x.id === id ? { ...x, status: "cancelled" } : x));
-    setModal(null);
-    addToast(`Booking "${b?.title}" telah dibatalkan.`, "error");
+  const handleCancel = async (id) => {
+    const booking = bookings.find(x => x.id === id);
+
+    try {
+      const data = await apiRequest(`/api/bookings/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+
+      setBookings(bks => bks.map(x => x.id === id ? data.booking : x));
+      setModal(null);
+      addToast(`Booking "${booking?.title}" telah dibatalkan.`, "error");
+    } catch (error) {
+      addToast(error.message || "Gagal membatalkan booking.", "error");
+    }
   };
-  const handleCheckin = (id) => {
-    const b = bookings.find(x => x.id === id);
-    setBookings(bks => bks.map(x => x.id === id ? { ...x, status: "checked_in" } : x));
-    addToast(`Check-in untuk "${b?.title}" berhasil! Meeting dimulai.`, "success");
+  const handleCheckin = async (id) => {
+    const booking = bookings.find(x => x.id === id);
+
+    try {
+      const data = await apiRequest(`/api/bookings/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "checked_in" }),
+      });
+
+      setBookings(bks => bks.map(x => x.id === id ? data.booking : x));
+      addToast(`Check-in untuk "${booking?.title}" berhasil! Meeting dimulai.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal melakukan check-in.", "error");
+    }
   };
 
   // ── Room CRUD ──
-  const handleAddRoom = (r) => { setRooms(x => [...x, r]); setModal(null); addToast(`✓ Ruangan "${r.name}" ditambahkan.`, "success"); };
-  const handleEditRoom = (r) => { setRooms(x => x.map(i => i.id === r.id ? r : i)); setModal(null); addToast(`Ruangan "${r.name}" diperbarui.`, "success"); };
-  const handleDeleteRoom = (room) => { setRooms(x => x.filter(i => i.id !== room.id)); setBookings(b => b.map(x => x.roomId === room.id ? { ...x, status: "cancelled" } : x)); setModal(null); addToast(`Ruangan "${room.name}" dihapus.`, "error"); };
-  const handleToggleRoom = (id) => { const r = rooms.find(x => x.id === id); setRooms(x => x.map(i => i.id === id ? { ...i, active: !i.active } : i)); addToast(`${r?.name} ${r?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info"); };
+  const handleAddRoom = async (room) => {
+    try {
+      const data = await apiRequest("/api/rooms", {
+        method: "POST",
+        body: JSON.stringify(room),
+      });
+
+      setRooms(x => [...x, data.room]);
+      setModal(null);
+      addToast(`✓ Ruangan "${data.room.name}" ditambahkan.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal menambah ruangan.", "error");
+    }
+  };
+  const handleEditRoom = async (room) => {
+    try {
+      const data = await apiRequest(`/api/rooms/${room.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(room),
+      });
+
+      setRooms(x => x.map(i => i.id === room.id ? data.room : i));
+      setModal(null);
+      addToast(`Ruangan "${data.room.name}" diperbarui.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal memperbarui ruangan.", "error");
+    }
+  };
+  const handleDeleteRoom = async (room) => {
+    try {
+      const data = await apiRequest(`/api/rooms/${room.id}`, { method: "DELETE" });
+      const deletedIds = new Set(data.deletedBookingIds || []);
+
+      setRooms(x => x.filter(i => i.id !== room.id));
+      setBookings(b => b.filter(x => !deletedIds.has(x.id)));
+      setModal(null);
+      addToast(`Ruangan "${room.name}" dihapus.`, "error");
+    } catch (error) {
+      addToast(error.message || "Gagal menghapus ruangan.", "error");
+    }
+  };
+  const handleToggleRoom = async (id) => {
+    const room = rooms.find(x => x.id === id);
+
+    try {
+      const data = await apiRequest(`/api/rooms/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !room?.active }),
+      });
+
+      setRooms(x => x.map(i => i.id === id ? data.room : i));
+      addToast(`${room?.name} ${room?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
+    } catch (error) {
+      addToast(error.message || "Gagal mengubah status ruangan.", "error");
+    }
+  };
 
   // ── Department CRUD ──
-  const handleAddDept = (d) => { setDepartments(x => [...x, d]); setModal(null); addToast(`✓ Departemen "${d.name}" ditambahkan.`, "success"); };
-  const handleEditDept = (d) => { setDepartments(x => x.map(i => i.id === d.id ? d : i)); setModal(null); addToast(`Departemen "${d.name}" diperbarui.`, "success"); };
-  const handleDeleteDept = (dept) => { setDepartments(x => x.filter(i => i.id !== dept.id)); setModal(null); addToast(`Departemen "${dept.name}" dihapus.`, "error"); };
-  const handleToggleDept = (id) => { const d = departments.find(x => x.id === id); setDepartments(x => x.map(i => i.id === id ? { ...i, active: !i.active } : i)); addToast(`${d?.name} ${d?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info"); };
+  const handleAddDept = async (department) => {
+    try {
+      const head = users.find(user => user.name === department.head);
+      const data = await apiRequest("/api/departments", {
+        method: "POST",
+        body: JSON.stringify({
+          name: department.name,
+          color: department.color,
+          description: department.description,
+          active: department.active,
+          headId: head?.id || null,
+        }),
+      });
+
+      setDepartments(x => [...x, data.department]);
+      setModal(null);
+      addToast(`✓ Departemen "${data.department.name}" ditambahkan.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal menambah departemen.", "error");
+    }
+  };
+  const handleEditDept = async (department) => {
+    const previousDepartment = departments.find(item => item.id === department.id);
+
+    try {
+      const head = users.find(user => user.name === department.head);
+      const data = await apiRequest(`/api/departments/${department.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: department.name,
+          color: department.color,
+          description: department.description,
+          active: department.active,
+          headId: head?.id || null,
+        }),
+      });
+
+      setDepartments(x => x.map(item => item.id === department.id ? data.department : item));
+
+      if (previousDepartment?.name && previousDepartment.name !== data.department.name) {
+        setUsers(currentUsers => currentUsers.map(user => user.department === previousDepartment.name ? { ...user, department: data.department.name, departmentId: data.department.id } : user));
+        setBookings(currentBookings => currentBookings.map(booking => booking.department === previousDepartment.name ? { ...booking, department: data.department.name, departmentId: data.department.id } : booking));
+        setAuthUser(currentUser => currentUser?.department === previousDepartment.name ? { ...currentUser, department: data.department.name, departmentId: data.department.id } : currentUser);
+      }
+
+      setModal(null);
+      addToast(`Departemen "${data.department.name}" diperbarui.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal memperbarui departemen.", "error");
+    }
+  };
+  const handleDeleteDept = async (department) => {
+    try {
+      await apiRequest(`/api/departments/${department.id}`, { method: "DELETE" });
+      setDepartments(x => x.filter(item => item.id !== department.id));
+      setUsers(currentUsers => currentUsers.map(user => user.department === department.name ? { ...user, department: null, departmentId: null } : user));
+      setBookings(currentBookings => currentBookings.map(booking => booking.department === department.name ? { ...booking, department: null, departmentId: null } : booking));
+      setAuthUser(currentUser => currentUser?.department === department.name ? { ...currentUser, department: null, departmentId: null } : currentUser);
+      setModal(null);
+      addToast(`Departemen "${department.name}" dihapus.`, "error");
+    } catch (error) {
+      addToast(error.message || "Gagal menghapus departemen.", "error");
+    }
+  };
+  const handleToggleDept = async (id) => {
+    const department = departments.find(x => x.id === id);
+
+    try {
+      const data = await apiRequest(`/api/departments/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !department?.active }),
+      });
+
+      setDepartments(x => x.map(item => item.id === id ? data.department : item));
+      addToast(`${department?.name} ${department?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
+    } catch (error) {
+      addToast(error.message || "Gagal mengubah status departemen.", "error");
+    }
+  };
 
   // ── User CRUD ──
-  const handleAddUser = (u) => { setUsers(x => [...x, u]); setModal(null); addToast(`✓ Pengguna "${u.name}" ditambahkan.`, "success"); };
-  const handleEditUser = (u) => { setUsers(x => x.map(i => i.id === u.id ? u : i)); setModal(null); addToast(`Pengguna "${u.name}" diperbarui.`, "success"); };
-  const handleDeleteUser = (user) => { setUsers(x => x.filter(i => i.id !== user.id)); setModal(null); addToast(`Pengguna "${user.name}" dihapus.`, "error"); };
-  const handleToggleUser = (id) => { const u = users.find(x => x.id === id); setUsers(x => x.map(i => i.id === id ? { ...i, active: !i.active } : i)); addToast(`${u?.name} ${u?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info"); };
+  const handleAddUser = async (user) => {
+    try {
+      const department = departments.find(item => item.name === user.department);
+      const payload = {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        active: user.active,
+        avatarColor: user.avatarColor,
+        departmentId: department?.id || null,
+      };
+
+      if (user.password) {
+        payload.password = user.password;
+      }
+
+      const data = await apiRequest("/api/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setUsers(x => [...x, data.user]);
+      setModal(null);
+      addToast(`✓ Pengguna "${data.user.name}" ditambahkan.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal menambah pengguna.", "error");
+    }
+  };
+  const handleEditUser = async (user) => {
+    const previousUser = users.find(item => item.id === user.id);
+
+    try {
+      const department = departments.find(item => item.name === user.department);
+      const payload = {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        active: user.active,
+        avatarColor: user.avatarColor,
+        departmentId: department?.id || null,
+      };
+
+      if (user.password) {
+        payload.password = user.password;
+      }
+
+      const data = await apiRequest(`/api/users/${user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      setUsers(x => x.map(item => item.id === user.id ? data.user : item));
+
+      if (previousUser?.name && previousUser.name !== data.user.name) {
+        setBookings(currentBookings => currentBookings.map(booking => booking.organizer === previousUser.name ? { ...booking, organizer: data.user.name, organizerId: data.user.id } : booking));
+      }
+
+      setAuthUser(currentUser => currentUser?.id === data.user.id ? data.user : currentUser);
+      setModal(null);
+      addToast(`Pengguna "${data.user.name}" diperbarui.`, "success");
+    } catch (error) {
+      addToast(error.message || "Gagal memperbarui pengguna.", "error");
+    }
+  };
+  const handleDeleteUser = async (user) => {
+    try {
+      await apiRequest(`/api/users/${user.id}`, { method: "DELETE" });
+      setUsers(x => x.filter(item => item.id !== user.id));
+      setBookings(currentBookings => currentBookings.map(booking => booking.organizer === user.name ? { ...booking, organizer: null, organizerId: null } : booking));
+      setModal(null);
+      addToast(`Pengguna "${user.name}" dihapus.`, "error");
+    } catch (error) {
+      addToast(error.message || "Gagal menghapus pengguna.", "error");
+    }
+  };
+  const handleToggleUser = async (id) => {
+    const user = users.find(x => x.id === id);
+
+    try {
+      const data = await apiRequest(`/api/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !user?.active }),
+      });
+
+      setUsers(x => x.map(item => item.id === id ? data.user : item));
+      setAuthUser(currentUser => currentUser?.id === data.user.id ? data.user : currentUser);
+      addToast(`${user?.name} ${user?.active ? "dinonaktifkan" : "diaktifkan"}.`, "info");
+    } catch (error) {
+      addToast(error.message || "Gagal mengubah status pengguna.", "error");
+    }
+  };
 
   const activeRooms = rooms.filter(r => r.active);
 
@@ -2224,12 +2496,23 @@ export default function App() {
     timeToMin(b.startTime) > new Date().getHours() * 60 + new Date().getMinutes()
   ).length;
 
+  if (initializing) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#080b11", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#0f1117", border: "1px solid #1f2937", borderRadius: 16, padding: "18px 22px" }}>
+          <RefreshCw size={18} style={{ animation: "spin 1s linear infinite" }} />
+          Memuat data MeetSpace...
+        </div>
+      </div>
+    );
+  }
+
   // Show full login page
   if (showLogin) {
     return (
       <>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
-        <LoginPage users={users} onLogin={handleLogin} />
+        <LoginPage onLogin={handleLogin} />
         {/* Back to guest view */}
         <button onClick={() => setShowLogin(false)} style={{ position: "fixed", top: 20, left: 20, background: "#1f2937", border: "none", color: "#9ca3af", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 6, zIndex: 9999 }}>
           <ChevronLeft size={14} /> Lihat tanpa login
@@ -2264,8 +2547,8 @@ export default function App() {
               <Building2 size={20} color="#fff" />
             </div>
             <div>
-              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: -0.3 }}>MeetSpace</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Room Booking</div>
+              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: -0.3, color: "#ffffff" }}>MeetSpace</div>
+              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#ffffff" }}>Room Booking</div>
             </div>
           </div>
         </div>
@@ -2282,12 +2565,12 @@ export default function App() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: "0 12px" }}>
-          <div style={{ fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "0 4px 8px", fontWeight: 600 }}>Menu</div>
+          <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "0 4px 8px", fontWeight: 600 }}>Menu</div>
           {navItems.filter(n => n.group === "main").map(({ id, label, icon: Icon, public: isPub }) => {
             const locked = !isPub && !authUser;
             const active = view === id;
             return (
-              <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'DM Sans',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : locked ? "#4b5563" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
+              <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : locked ? "#4b5563" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
                 <Icon size={17} color={active ? "#6366f1" : locked ? "#374151" : "#6b7280"} />
                 {label}
                 {isPub && <span style={{ marginLeft: "auto", fontSize: 9, color: "#374151", background: "#1a1d27", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase", letterSpacing: 0.5 }}>Publik</span>}
@@ -2300,12 +2583,12 @@ export default function App() {
           {/* Admin section — only shown to admin users */}
           {authUser?.role === "admin" && (
             <>
-              <div style={{ fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "14px 4px 8px", fontWeight: 600 }}>Admin</div>
+              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, color: "#4b5563", textTransform: "uppercase", letterSpacing: 1, padding: "14px 4px 8px", fontWeight: 600 }}>Admin</div>
               {navItems.filter(n => n.group === "admin").map(({ id, label, icon: Icon }) => {
                 const count = id === "rooms" ? rooms.length : id === "departments" ? departments.length : users.length;
                 const active = view === id;
                 return (
-                  <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'DM Sans',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
+                  <button key={id} onClick={() => handleNavClick(id)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "11px 14px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", background: active ? "#1a1d27" : "transparent", color: active ? "#f9fafb" : "#6b7280", fontWeight: active ? 600 : 400, transition: "all .15s", textAlign: "left" }}>
                     <Icon size={17} color={active ? "#6366f1" : "#6b7280"} />
                     {label}
                     <span style={{ marginLeft: "auto", background: "#1f2937", color: "#6b7280", borderRadius: 10, padding: "1px 7px", fontSize: 11 }}>{count}</span>
@@ -2318,7 +2601,7 @@ export default function App() {
 
         {/* Booking CTA */}
         <div style={{ padding: "0 12px 10px" }}>
-          <button onClick={() => requireAuth(() => setModal({ type: "booking" }))} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: "#fff", borderRadius: 12, padding: "12px", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <button onClick={() => requireAuth(() => setModal({ type: "booking" }))} style={{ width: "100%", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", color: "#fff", borderRadius: 12, padding: "12px", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "'Space Grotesk',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Plus size={16} /> Booking Baru
             {!authUser && <Lock size={12} style={{ opacity: .7 }} />}
           </button>
@@ -2327,12 +2610,12 @@ export default function App() {
         {/* Layout toggle */}
         <div style={{ padding: "0 12px 10px" }}>
           <div style={{ background: "#111320", border: "1px solid #1f2937", borderRadius: 12, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11, color: "#4b5563", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8, fontWeight: 600 }}>Layout</div>
+            <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: "#4b5563", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8, fontWeight: 600 }}>Layout</div>
             <div style={{ display: "flex", gap: 6 }}>
               {[["boxed", "Boxed", LayoutPanelLeft], ["fluid", "Fluid", Maximize2]].map(([val, lbl, Icon]) => (
                 <button key={val} onClick={() => setLayout(val)} style={{ flex: 1, background: layout === val ? "#6366f122" : "transparent", border: `1px solid ${layout === val ? "#6366f1" : "#1f2937"}`, borderRadius: 8, padding: "7px 6px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s" }}>
                   <Icon size={14} color={layout === val ? "#6366f1" : "#4b5563"} />
-                  <span style={{ fontSize: 10, color: layout === val ? "#6366f1" : "#4b5563", fontFamily: "'DM Sans',sans-serif", fontWeight: layout === val ? 700 : 400 }}>{lbl}</span>
+                  <span style={{ fontSize: 10, color: layout === val ? "#6366f1" : "#4b5563", fontFamily: "'Space Grotesk',sans-serif", fontWeight: layout === val ? 700 : 400 }}>{lbl}</span>
                 </button>
               ))}
             </div>
@@ -2348,8 +2631,8 @@ export default function App() {
                   {authUser.name.split(" ").map(x => x[0]).join("").slice(0, 2)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{authUser.name.split(" ")[0]}</div>
-                  <span style={{ fontSize: 10, background: roleBadgeColor[authUser.role] + "22", color: roleBadgeColor[authUser.role], borderRadius: 10, padding: "1px 7px", fontWeight: 700 }}>{authUser.role}</span>
+                  <div style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{authUser.name.split(" ")[0]}</div>
+                  <span style={{fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, background: roleBadgeColor[authUser.role] + "22", color: "#fff", borderRadius: 10, padding: "1px 7px", fontWeight: 700 }}>{authUser.role}</span>
                 </div>
                 <button onClick={handleLogout} title="Logout" style={{ background: "#1f0000", border: "1px solid #ef444422", borderRadius: 8, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", flexShrink: 0 }}>
                   <LogOut size={13} />
