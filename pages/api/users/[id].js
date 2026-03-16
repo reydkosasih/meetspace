@@ -3,6 +3,7 @@ import { hashPassword } from "@/lib/auth";
 import { parseInteger, sendError, sendMethodNotAllowed } from "@/lib/api";
 import { requireAdmin } from "@/lib/access";
 import { serializeUser } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 function normalizeRole(role) {
   const normalized = String(role || "MEMBER").trim().toUpperCase();
@@ -74,7 +75,9 @@ export default async function handler(req, res) {
         include: { department: true },
       });
 
-      return res.status(200).json({ user: serializeUser(user) });
+      const serialized = serializeUser(user);
+      eventBus.emit("update", { kind: "user:update", payload: serialized });
+      return res.status(200).json({ user: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to update user.");
     }
@@ -87,6 +90,7 @@ export default async function handler(req, res) {
       }
 
       await prisma.user.delete({ where: { id: userId } });
+      eventBus.emit("update", { kind: "user:delete", payload: { userId } });
       return res.status(200).json({ success: true, userId });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to delete user.");

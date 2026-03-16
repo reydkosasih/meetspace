@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { parseInteger, sendError, sendMethodNotAllowed } from "@/lib/api";
 import { requireAdmin } from "@/lib/access";
 import { serializeDepartment } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 function buildDepartmentUpdateData(payload) {
   const data = {};
@@ -53,7 +54,9 @@ export default async function handler(req, res) {
         include: { head: true },
       });
 
-      return res.status(200).json({ department: serializeDepartment(department) });
+      const serialized = serializeDepartment(department);
+      eventBus.emit("update", { kind: "department:update", payload: serialized });
+      return res.status(200).json({ department: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to update department.");
     }
@@ -67,6 +70,7 @@ export default async function handler(req, res) {
 
     try {
       await prisma.department.delete({ where: { id: departmentId } });
+      eventBus.emit("update", { kind: "department:delete", payload: { departmentId } });
       return res.status(200).json({ success: true, departmentId });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to delete department.");

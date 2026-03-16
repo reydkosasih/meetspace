@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { clientApi } from "@/lib/client-api";
 import { ADMIN_VIEWS, NAV_ITEMS, PUBLIC_VIEWS } from "@/components/meeting-app/constants";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 const MOBILE_BREAKPOINT = 860;
 const TABLET_BREAKPOINT = 1180;
@@ -149,6 +150,16 @@ export function useMeetingAppController() {
     bootstrapApp();
   }, [bootstrapApp]);
 
+  // ── Real-time sync via Server-Sent Events ─────────────────────────────────
+  useRealtimeSync({
+    setBookings,
+    setRooms,
+    setDepartments,
+    setUsers,
+    setAuthUser,
+    authUser,
+  });
+
   const handleLogin = useCallback(async ({ email, password }) => {
     const data = await clientApi.auth.login({ email, password });
     const user = data?.user;
@@ -207,7 +218,11 @@ export function useMeetingAppController() {
       }
 
       const data = await clientApi.bookings.create(payload);
-      setBookings((currentBookings) => [...currentBookings, data.booking]);
+      setBookings((currentBookings) =>
+        currentBookings.some((b) => b.id === data.booking.id)
+          ? currentBookings
+          : [...currentBookings, data.booking]
+      );
       setModal(null);
       addToast(`✓ Booking "${data.booking.title}" berhasil dibuat! Konfirmasi dikirim ke email.`, "success");
     } catch (error) {
@@ -243,7 +258,11 @@ export function useMeetingAppController() {
   const handleAddRoom = useCallback(async (room) => {
     try {
       const data = await clientApi.rooms.create(room);
-      setRooms((currentRooms) => [...currentRooms, data.room]);
+      setRooms((currentRooms) =>
+        currentRooms.some((r) => r.id === data.room.id)
+          ? currentRooms
+          : [...currentRooms, data.room]
+      );
       setModal(null);
       addToast(`✓ Ruangan "${data.room.name}" ditambahkan.`, "success");
     } catch (error) {
@@ -299,7 +318,11 @@ export function useMeetingAppController() {
         headId: head?.id || null,
       });
 
-      setDepartments((currentDepartments) => [...currentDepartments, data.department]);
+      setDepartments((currentDepartments) =>
+        currentDepartments.some((d) => d.id === data.department.id)
+          ? currentDepartments
+          : [...currentDepartments, data.department]
+      );
       setModal(null);
       addToast(`✓ Departemen "${data.department.name}" ditambahkan.`, "success");
     } catch (error) {
@@ -379,7 +402,11 @@ export function useMeetingAppController() {
       }
 
       const data = await clientApi.users.create(payload);
-      setUsers((currentUsers) => [...currentUsers, data.user]);
+      setUsers((currentUsers) =>
+        currentUsers.some((u) => u.id === data.user.id)
+          ? currentUsers
+          : [...currentUsers, data.user]
+      );
       setModal(null);
       addToast(`✓ Pengguna "${data.user.name}" ditambahkan.`, "success");
     } catch (error) {

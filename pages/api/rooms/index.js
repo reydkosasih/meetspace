@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendError, sendMethodNotAllowed, requireFields } from "@/lib/api";
 import { requireAdmin } from "@/lib/access";
 import { serializeRoom } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -34,7 +35,9 @@ export default async function handler(req, res) {
         },
       });
 
-      return res.status(201).json({ room: serializeRoom(room) });
+      const serialized = serializeRoom(room);
+      eventBus.emit("update", { kind: "room:create", payload: serialized });
+      return res.status(201).json({ room: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to create room.");
     }

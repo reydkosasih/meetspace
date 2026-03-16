@@ -3,6 +3,7 @@ import { parseInteger, sendError, sendMethodNotAllowed, requireFields } from "@/
 import { requireAuth } from "@/lib/access";
 import { normalizeBookingStatus } from "@/lib/booking";
 import { serializeBooking } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 export default async function handler(req, res) {
   const bookingId = parseInteger(req.query.id);
@@ -52,7 +53,9 @@ export default async function handler(req, res) {
       },
     });
 
-    return res.status(200).json({ booking: serializeBooking(booking) });
+    const serialized = serializeBooking(booking);
+    eventBus.emit("update", { kind: "booking:update", payload: serialized });
+    return res.status(200).json({ booking: serialized });
   } catch (error) {
     return sendError(res, 400, error.message || "Unable to update booking.");
   }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { parseInteger, sendError, sendMethodNotAllowed } from "@/lib/api";
 import { requireAdmin } from "@/lib/access";
 import { serializeRoom } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 function buildRoomUpdateData(payload) {
   const data = {};
@@ -64,7 +65,9 @@ export default async function handler(req, res) {
         data,
       });
 
-      return res.status(200).json({ room: serializeRoom(room) });
+      const serialized = serializeRoom(room);
+      eventBus.emit("update", { kind: "room:update", payload: serialized });
+      return res.status(200).json({ room: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to update room.");
     }
@@ -87,11 +90,9 @@ export default async function handler(req, res) {
         prisma.room.delete({ where: { id: roomId } }),
       ]);
 
-      return res.status(200).json({
-        success: true,
-        roomId,
-        deletedBookingIds: roomBookings.map((booking) => booking.id),
-      });
+      const deletedBookingIds = roomBookings.map((booking) => booking.id);
+      eventBus.emit("update", { kind: "room:delete", payload: { roomId, deletedBookingIds } });
+      return res.status(200).json({ success: true, roomId, deletedBookingIds });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to delete room.");
     }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendError, sendMethodNotAllowed, requireFields, parseInteger } from "@/lib/api";
 import { requireAdmin } from "@/lib/access";
 import { serializeDepartment } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -36,7 +37,9 @@ export default async function handler(req, res) {
         include: { head: true },
       });
 
-      return res.status(201).json({ department: serializeDepartment(department) });
+      const serialized = serializeDepartment(department);
+      eventBus.emit("update", { kind: "department:create", payload: serialized });
+      return res.status(201).json({ department: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to create department.");
     }

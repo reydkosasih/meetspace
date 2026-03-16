@@ -3,6 +3,7 @@ import { sendError, sendMethodNotAllowed, requireFields, parseInteger } from "@/
 import { hashPassword } from "@/lib/auth";
 import { requireAdmin, requireAuth } from "@/lib/access";
 import { serializeUser } from "@/lib/serializers";
+import eventBus from "@/lib/event-bus";
 
 function normalizeRole(role) {
   const normalized = String(role || "MEMBER").trim().toUpperCase();
@@ -53,7 +54,9 @@ export default async function handler(req, res) {
         include: { department: true },
       });
 
-      return res.status(201).json({ user: serializeUser(user) });
+      const serialized = serializeUser(user);
+      eventBus.emit("update", { kind: "user:create", payload: serialized });
+      return res.status(201).json({ user: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to create user.");
     }

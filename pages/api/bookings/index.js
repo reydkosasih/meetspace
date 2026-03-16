@@ -4,6 +4,7 @@ import { requireBooker } from "@/lib/access";
 import { hasBookingConflict, normalizeBookingStatus, timeToMinutes } from "@/lib/booking";
 import { serializeBooking } from "@/lib/serializers";
 import { getRequestUser } from "@/lib/auth";
+import eventBus from "@/lib/event-bus";
 
 function toDateOnly(dateValue) {
   const date = new Date(`${dateValue}T00:00:00.000Z`);
@@ -110,7 +111,9 @@ export default async function handler(req, res) {
         },
       });
 
-      return res.status(201).json({ booking: serializeBooking(booking) });
+      const serialized = serializeBooking(booking);
+      eventBus.emit("update", { kind: "booking:create", payload: serialized });
+      return res.status(201).json({ booking: serialized });
     } catch (error) {
       return sendError(res, 400, error.message || "Unable to create booking.");
     }
