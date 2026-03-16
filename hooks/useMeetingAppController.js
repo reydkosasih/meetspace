@@ -3,6 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { clientApi } from "@/lib/client-api";
 import { ADMIN_VIEWS, NAV_ITEMS, PUBLIC_VIEWS } from "@/components/meeting-app/constants";
 
+const MOBILE_BREAKPOINT = 860;
+const TABLET_BREAKPOINT = 1180;
+
 function timeToMin(timeValue) {
   const [hours, minutes] = String(timeValue).split(":").map(Number);
   return hours * 60 + minutes;
@@ -29,11 +32,53 @@ export function useMeetingAppController() {
   const [showLogin, setShowLogin] = useState(false);
   const [layout, setLayout] = useState("boxed");
   const [theme, setTheme] = useState("dark");
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     setLayout(readStoredValue("meetspace-layout", "boxed"));
     setTheme(readStoredValue("meetspace-theme", "dark"));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const syncViewport = () => {
+      const width = window.innerWidth;
+      const mobile = width < MOBILE_BREAKPOINT;
+      const tablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+      if (!mobile) {
+        setSidebarOpen(false);
+      }
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+
+    const shouldLockBody = isMobile && sidebarOpen;
+    const previousOverflow = document.body.style.overflow;
+
+    if (shouldLockBody) {
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobile, sidebarOpen]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -127,6 +172,7 @@ export function useMeetingAppController() {
     if (["mybookings", "rooms", "departments", "users"].includes(view)) {
       setView("calendar");
     }
+    setSidebarOpen(false);
     addToast("Anda telah keluar.", "info");
   }, [addToast, view]);
 
@@ -415,11 +461,30 @@ export function useMeetingAppController() {
     }
 
     setView(id);
-  }, [addToast, authUser]);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [addToast, authUser, isMobile]);
 
   const toggleTheme = useCallback(() => {
     setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark");
   }, []);
+
+  const openSidebar = useCallback(() => {
+    if (isMobile) {
+      setSidebarOpen(true);
+    }
+  }, [isMobile]);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    if (isMobile) {
+      setSidebarOpen((currentState) => !currentState);
+    }
+  }, [isMobile]);
 
   const activeRooms = useMemo(() => rooms.filter((room) => room.active), [rooms]);
   const isAdmin = authUser?.role === "admin";
@@ -442,6 +507,9 @@ export function useMeetingAppController() {
       showLogin,
       layout,
       theme,
+      isMobile,
+      isTablet,
+      sidebarOpen,
       activeRooms,
       isAdmin,
       navItems: NAV_ITEMS,
@@ -452,6 +520,9 @@ export function useMeetingAppController() {
       setModal,
       setShowLogin,
       setLayout,
+      openSidebar,
+      closeSidebar,
+      toggleSidebar,
       toggleTheme,
       removeToast,
       handleLogin,

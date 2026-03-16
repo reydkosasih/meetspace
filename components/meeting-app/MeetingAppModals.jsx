@@ -6,6 +6,7 @@ export function MeetingAppModals({
   departments,
   users,
   bookings,
+  isMobile,
   components,
   actions,
 }) {
@@ -53,6 +54,7 @@ export function MeetingAppModals({
           departments={departments}
           preRoom={modal.preRoom}
           preDate={modal.preDate}
+          isMobile={isMobile}
           onSave={handleSaveBooking}
           onClose={() => setModal(null)}
         />
