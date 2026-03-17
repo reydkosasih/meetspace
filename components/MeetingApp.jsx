@@ -824,7 +824,7 @@ function AnalyticsView({ bookings, rooms, departments, isMobile }) {
         {statCard(<BarChart2 size={20} color="#6366f1" />, "Total Booking", bookings.filter(b => b.status !== "cancelled").length, "Semua waktu", "#6366f1")}
         {statCard(<CheckCircle size={20} color="#10b981" />, "Check-in Rate", `${totalDone ? Math.round(checkinRate / totalDone * 100) : 0}%`, `${checkinRate} dari ${totalDone} booking`, "#10b981")}
         {statCard(<AlertCircle size={20} color="#f97316" />, "No Show", totalNoShow, "Booking tapi tidak hadir", "#f97316")}
-        {statCard(<XCircle size={20} color="#ef4444" />, "Dibatalkan", totalCancelled, "Booking yang dikancell", "#ef4444")}
+        {statCard(<XCircle size={20} color="#ef4444" />, "Dibatalkan", totalCancelled, "Booking yang dibatalkan", "#ef4444")}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
