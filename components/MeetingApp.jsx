@@ -184,6 +184,28 @@ function QRModal({ booking, room, onCheckin, onClose }) {
   );
 }
 
+// ─── BOOKING TEMPLATES ───────────────────────────────────────────────────────
+const DEFAULT_TEMPLATES = [
+  { id: "tpl-1", name: "Budget Bulanan", icon: "💰", title: "Meeting Budget Bulanan", startTime: "09:00", endTime: "11:00", attendees: 10 },
+  { id: "tpl-2", name: "Sprint Planning", icon: "🚀", title: "Sprint Planning", startTime: "09:00", endTime: "12:00", attendees: 8 },
+  { id: "tpl-3", name: "Briefing Tim", icon: "📋", title: "Briefing Tim Pagi", startTime: "08:00", endTime: "09:00", attendees: 15 },
+  { id: "tpl-4", name: "Interview", icon: "🎤", title: "Interview Kandidat", startTime: "10:00", endTime: "11:00", attendees: 3 },
+  { id: "tpl-5", name: "1-on-1", icon: "👥", title: "1-on-1 Review", startTime: "14:00", endTime: "15:00", attendees: 2 },
+  { id: "tpl-6", name: "Presentasi Klien", icon: "🌟", title: "Presentasi kepada Klien", startTime: "13:00", endTime: "15:00", attendees: 20 },
+  { id: "tpl-7", name: "Retrospektif", icon: "🔄", title: "Sprint Retrospektif", startTime: "15:00", endTime: "16:00", attendees: 8 },
+  { id: "tpl-8", name: "Town Hall", icon: "🏛️", title: "Town Hall Perusahaan", startTime: "10:00", endTime: "12:00", attendees: 50 },
+];
+
+const TEMPLATES_KEY = "meetspace-booking-templates";
+
+function loadCustomTemplates() {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(TEMPLATES_KEY) || "[]"); } catch { return []; }
+}
+function saveCustomTemplates(list) {
+  if (typeof window !== "undefined") localStorage.setItem(TEMPLATES_KEY, JSON.stringify(list));
+}
+
 // ─── BOOKING MODAL ────────────────────────────────────────────────────────────
 function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, onSave, onClose, isMobile }) {
   const activeUsers = users.filter(u => u.active);
@@ -202,6 +224,49 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
   const [error, setError] = useState("");
   const room = rooms.find(r => r.id === Number(form.roomId)) || null;
   const bufferEnd = minToTime(timeToMin(form.endTime) + BUFFER);
+
+  // ── Template state ────────────────────────────────────────────────────────
+  const [customTemplates, setCustomTemplates] = useState(loadCustomTemplates);
+  const [savingName, setSavingName] = useState("");     // input value when naming a new template
+  const [showSaveBox, setShowSaveBox] = useState(false);  // show the save-as-template input
+
+  const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates];
+
+  const applyTemplate = (tpl) => {
+    setForm(f => ({
+      ...f,
+      title: tpl.title,
+      startTime: tpl.startTime,
+      endTime: tpl.endTime,
+      attendees: tpl.attendees,
+    }));
+    setError("");
+  };
+
+  const handleSaveTemplate = () => {
+    const name = savingName.trim();
+    if (!name) return;
+    const newTpl = {
+      id: `tpl-custom-${Date.now()}`,
+      name,
+      icon: "📌",
+      title: form.title || name,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      attendees: Number(form.attendees),
+    };
+    const updated = [...customTemplates, newTpl];
+    setCustomTemplates(updated);
+    saveCustomTemplates(updated);
+    setSavingName("");
+    setShowSaveBox(false);
+  };
+
+  const handleDeleteTemplate = (id) => {
+    const updated = customTemplates.filter(t => t.id !== id);
+    setCustomTemplates(updated);
+    saveCustomTemplates(updated);
+  };
 
   useEffect(() => {
     setForm(currentForm => ({
@@ -252,6 +317,85 @@ function BookingModal({ rooms, bookings, preRoom, preDate, users, departments, o
           <AlertCircle size={16} /> Booking memerlukan minimal satu room aktif, satu user aktif, dan satu departemen aktif.
         </div>
       )}
+
+      {/* ── Template Picker ─────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontSize: 11, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>Template</span>
+          <button
+            onClick={() => { setShowSaveBox(v => !v); setSavingName(""); }}
+            title="Simpan form saat ini sebagai template"
+            style={{ fontSize: 11, color: "var(--info)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 0" }}
+          >
+            <Plus size={12} /> Simpan sebagai template
+          </button>
+        </div>
+
+        {/* Save-as-template input */}
+        {showSaveBox && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input
+              autoFocus
+              placeholder="Nama template..."
+              value={savingName}
+              onChange={e => setSavingName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSaveTemplate(); if (e.key === "Escape") setShowSaveBox(false); }}
+              style={{ flex: 1, background: "var(--surface-bg)", border: "1px solid var(--info)", borderRadius: 8, color: "var(--text-primary)", padding: "8px 12px", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none" }}
+            />
+            <button
+              onClick={handleSaveTemplate}
+              disabled={!savingName.trim()}
+              style={{ background: "var(--info)", border: "none", color: "#fff", borderRadius: 8, padding: "8px 14px", fontWeight: 700, fontSize: 13, cursor: savingName.trim() ? "pointer" : "not-allowed", opacity: savingName.trim() ? 1 : 0.5 }}
+            >Simpan</button>
+            <button
+              onClick={() => setShowSaveBox(false)}
+              style={{ background: "var(--surface-muted)", border: "none", color: "var(--text-secondary)", borderRadius: 8, padding: "8px 10px", cursor: "pointer" }}
+            ><X size={14} /></button>
+          </div>
+        )}
+
+        {/* Template chips */}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "thin" }}>
+          {allTemplates.map(tpl => {
+            const isCustom = tpl.id.startsWith("tpl-custom-");
+            return (
+              <div
+                key={tpl.id}
+                style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, position: "relative" }}
+              >
+                <button
+                  onClick={() => applyTemplate(tpl)}
+                  title={`${tpl.title} · ${tpl.startTime}–${tpl.endTime} · ${tpl.attendees} orang`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: "var(--surface-bg)", border: "1px solid var(--border-color)",
+                    borderRadius: 20, padding: isCustom ? "6px 8px 6px 12px" : "6px 14px",
+                    cursor: "pointer", color: "var(--text-primary)", fontSize: 13,
+                    fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
+                    transition: "border-color .15s, background .15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--info)"; e.currentTarget.style.background = "var(--info-bg)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--surface-bg)"; }}
+                >
+                  <span style={{ fontSize: 15, lineHeight: 1 }}>{tpl.icon}</span>
+                  <span>{tpl.name}</span>
+                  {!isCustom && <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 2 }}>{tpl.startTime}–{tpl.endTime}</span>}
+                </button>
+                {isCustom && (
+                  <button
+                    onClick={() => handleDeleteTemplate(tpl.id)}
+                    title="Hapus template"
+                    style={{ background: "var(--danger-bg)", border: "1px solid var(--danger-soft)", color: "var(--danger)", borderRadius: "50%", width: 18, height: 18, fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: -2 }}
+                  >×</button>
+                )}
+              </div>
+            );
+          })}
+          {allTemplates.length === 0 && (
+            <span style={{ fontSize: 13, color: "var(--text-muted)", fontStyle: "italic" }}>Belum ada template.</span>
+          )}
+        </div>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
         {/* Title */}
@@ -392,7 +536,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick, isMobile 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [filterCap, setFilterCap] = useState(0);
   const [search, setSearch] = useState("");
-  const [mobileTab, setMobileTab] = useState("calendar");
+  const [mobileTab, setMobileTab] = useState("availability");
 
   const matrix = getMonthMatrix(year, month);
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
