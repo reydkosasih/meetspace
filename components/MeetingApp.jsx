@@ -536,7 +536,7 @@ function CalendarView({ bookings, rooms, onNewBooking, onBookingClick, isMobile 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [filterCap, setFilterCap] = useState(0);
   const [search, setSearch] = useState("");
-  const [mobileTab, setMobileTab] = useState("availability");
+  const [mobileTab, setMobileTab] = useState("calendar");
 
   const matrix = getMonthMatrix(year, month);
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
