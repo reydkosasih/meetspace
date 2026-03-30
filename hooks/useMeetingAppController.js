@@ -21,7 +21,7 @@ function readStoredValue(key, fallback) {
 }
 
 export function useMeetingAppController() {
-  const [view, setView] = useState("calendar");
+  const [view, setView] = useState("availability");
   const [rooms, setRooms] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -181,7 +181,7 @@ export function useMeetingAppController() {
     setAuthUser(null);
     setUsers([]);
     if (["mybookings", "rooms", "departments", "users"].includes(view)) {
-      setView("calendar");
+      setView("availability");
     }
     setSidebarOpen(false);
     addToast("Anda telah keluar.", "info");
